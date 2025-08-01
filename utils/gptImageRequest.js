@@ -55,15 +55,27 @@ async function sendGPTImageRequest(prompt, size = '1024x1024', quality = 'medium
  */
 async function sendGPTI2IRequest(imageFiles, prompt, size = '1024x1024', quality = 'medium', model = 'gpt-image-1', n = 1) {
     try {
+        console.log('🔍 i2i 요청 시작:', {
+            imageFiles: imageFiles.length + '개 파일',
+            prompt: prompt,
+            size: size,
+            quality: quality,
+            model: model,
+            n: n
+        });
+
         // FormData 생성
         const form = new FormData();
         
         // 이미지 파일들 추가
         imageFiles.forEach((filePath, idx) => {
             if (fs.existsSync(filePath)) {
+                console.log(`📁 이미지 파일 ${idx + 1} 추가:`, filePath);
                 form.append('image', fs.createReadStream(filePath), {
                     filename: `image${idx + 1}${path.extname(filePath)}`
                 });
+            } else {
+                console.error(`❌ 파일이 존재하지 않음:`, filePath);
             }
         });
         
@@ -74,12 +86,22 @@ async function sendGPTI2IRequest(imageFiles, prompt, size = '1024x1024', quality
         form.append('quality', quality);
         form.append('size', size);
         
+        console.log('📤 FormData 파라미터 추가 완료');
+        
         // 헤더
         const headers = {
             ...form.getHeaders(),
             'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${IMG_KEY}`,
         };
+        
+        console.log('📋 요청 헤더:', {
+            'Content-Type': headers['Content-Type'],
+            'Authorization': headers.Authorization ? 'Bearer [HIDDEN]' : '없음',
+            'Content-Length': headers['Content-Length'] || '자동 설정'
+        });
+        
+        console.log('🚀 API 요청 전송 중...');
         
         // 요청
         const response = await axios.post(
@@ -90,9 +112,49 @@ async function sendGPTI2IRequest(imageFiles, prompt, size = '1024x1024', quality
                 timeout: 180000 // 3분 타임아웃
             }
         );
+        
+        console.log('✅ i2i API 응답 성공:', {
+            status: response.status,
+            statusText: response.statusText,
+            dataKeys: Object.keys(response.data || {}),
+            hasData: !!response.data
+        });
+        
+        // 응답 데이터에서 base64 문자열을 [b64 string]으로 대체
+        const logData = JSON.stringify(response.data, (key, value) => {
+            if (typeof value === 'string' && value.length > 100 && /^[A-Za-z0-9+/=]+$/.test(value)) {
+                return '[b64 string]';
+            }
+            return value;
+        }, 2);
+        
+        console.log('📄 응답 데이터 (base64 축약):', logData);
+        
         return response.data;
     } catch (error) {
-        console.error('i2i 이미지 생성 API 에러:', error.response?.data || error.message);
+        console.error('❌ i2i 이미지 생성 API 에러:');
+        console.error('에러 타입:', error.constructor.name);
+        console.error('에러 메시지:', error.message);
+        
+        if (error.response) {
+            console.error('응답 상태:', error.response.status);
+            console.error('응답 헤더:', error.response.headers);
+            
+            // 에러 응답 데이터에서 base64 문자열 축약
+            const errorData = JSON.stringify(error.response.data, (key, value) => {
+                if (typeof value === 'string' && value.length > 100 && /^[A-Za-z0-9+/=]+$/.test(value)) {
+                    return '[b64 string]';
+                }
+                return value;
+            }, 2);
+            
+            console.error('에러 응답 데이터 (base64 축약):', errorData);
+        } else if (error.request) {
+            console.error('요청은 전송되었지만 응답이 없음');
+        } else {
+            console.error('요청 설정 중 에러:', error.message);
+        }
+        
         throw error;
     }
 }
@@ -108,12 +170,24 @@ async function sendGPTI2IRequest(imageFiles, prompt, size = '1024x1024', quality
  * @returns {Promise<object>} - API 응답
  */
 async function sendGPTI2IFromAttachments(attachments, prompt, size = '1024x1024', quality = 'medium', model = 'gpt-image-1', n = 1) {
+    console.log('🔍 Discord 첨부파일 i2i 요청 시작:', {
+        attachmentsCount: attachments.length,
+        prompt: prompt,
+        size: size,
+        quality: quality,
+        model: model,
+        n: n
+    });
+
     // 지원 확장자
     const allowedExt = ['.jpg', '.jpeg', '.png', '.webp'];
     
     // 임시 저장 경로
     const tempDir = path.join(__dirname, 'temp_i2i');
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir);
+        console.log('📁 임시 디렉토리 생성:', tempDir);
+    }
     const tempFiles = [];
     
     try {
@@ -122,43 +196,74 @@ async function sendGPTI2IFromAttachments(attachments, prompt, size = '1024x1024'
             const att = attachments[i];
             const ext = path.extname(att.name).toLowerCase();
             
+            console.log(`📎 첨부파일 ${i + 1} 검증:`, {
+                name: att.name,
+                size: att.size,
+                ext: ext,
+                url: att.url
+            });
+            
             if (!allowedExt.includes(ext)) {
+                console.error(`❌ 지원하지 않는 파일 형식: ${ext}`);
                 throw new Error('unsupported_type');
             }
             
             if (att.size >= 50 * 1024 * 1024) {
+                console.error(`❌ 파일이 너무 큼: ${att.size} bytes`);
                 throw new Error('file_too_large');
             }
             
             // 파일 다운로드
             const tempPath = path.join(tempDir, `image${i + 1}${ext}`);
+            console.log(`⬇️ 파일 다운로드 중: ${att.name} -> ${tempPath}`);
+            
             const response = await axios.get(att.url, { responseType: 'stream' });
             await new Promise((resolve, reject) => {
                 const stream = fs.createWriteStream(tempPath);
                 response.data.pipe(stream);
-                stream.on('finish', resolve);
-                stream.on('error', reject);
+                stream.on('finish', () => {
+                    console.log(`✅ 파일 다운로드 완료: ${tempPath}`);
+                    resolve();
+                });
+                stream.on('error', (err) => {
+                    console.error(`❌ 파일 다운로드 실패: ${err.message}`);
+                    reject(err);
+                });
             });
             tempFiles.push(tempPath);
         }
         
+        console.log('🚀 i2i API 요청 전송...');
+        
         // i2i 요청 보내기
         const result = await sendGPTI2IRequest(tempFiles, prompt, size, quality, model, n);
+        
+        console.log('✅ Discord 첨부파일 i2i 요청 완료');
         return result;
         
     } catch (err) {
+        console.error('❌ Discord 첨부파일 i2i 요청 실패:', err.message);
         throw err;
     } finally {
+        console.log('🧹 임시 파일 정리 중...');
         // 임시 파일 정리
         for (const file of tempFiles) {
-            try { fs.unlinkSync(file); } catch {}
+            try { 
+                fs.unlinkSync(file);
+                console.log(`🗑️ 임시 파일 삭제: ${file}`);
+            } catch (e) {
+                console.error(`❌ 임시 파일 삭제 실패: ${file}`, e.message);
+            }
         }
         // 폴더 비우기(남은 파일 없으면 삭제)
         try {
             if (fs.existsSync(tempDir) && fs.readdirSync(tempDir).length === 0) {
                 fs.rmdirSync(tempDir);
+                console.log('🗑️ 임시 디렉토리 삭제:', tempDir);
             }
-        } catch {}
+        } catch (e) {
+            console.error('❌ 임시 디렉토리 삭제 실패:', e.message);
+        }
     }
 }
 
