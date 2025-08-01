@@ -133,26 +133,32 @@ async function sendGPTI2IRequest(imageFiles, prompt, size = '1024x1024', quality
         return response.data;
     } catch (error) {
         console.error('❌ i2i 이미지 생성 API 에러:');
-        console.error('에러 타입:', error.constructor.name);
-        console.error('에러 메시지:', error.message);
         
         if (error.response) {
-            console.error('응답 상태:', error.response.status);
-            console.error('응답 헤더:', error.response.headers);
+            console.error(`상태: ${error.response.status} - ${error.response.statusText}`);
             
-            // 에러 응답 데이터에서 base64 문자열 축약
-            const errorData = JSON.stringify(error.response.data, (key, value) => {
-                if (typeof value === 'string' && value.length > 100 && /^[A-Za-z0-9+/=]+$/.test(value)) {
-                    return '[b64 string]';
+            // 에러 응답 데이터에서 중요한 정보만 추출
+            const errorData = error.response.data;
+            if (errorData) {
+                if (errorData.error) {
+                    console.error('에러:', errorData.error.message || errorData.error);
+                } else if (errorData.message) {
+                    console.error('메시지:', errorData.message);
+                } else {
+                    // base64 문자열 축약하여 간단히 출력
+                    const simpleError = JSON.stringify(errorData, (key, value) => {
+                        if (typeof value === 'string' && value.length > 50) {
+                            return value.substring(0, 50) + '...';
+                        }
+                        return value;
+                    });
+                    console.error('응답:', simpleError);
                 }
-                return value;
-            }, 2);
-            
-            console.error('에러 응답 데이터 (base64 축약):', errorData);
+            }
         } else if (error.request) {
-            console.error('요청은 전송되었지만 응답이 없음');
+            console.error('네트워크 에러: 요청은 전송되었지만 응답이 없음');
         } else {
-            console.error('요청 설정 중 에러:', error.message);
+            console.error('에러:', error.message);
         }
         
         throw error;
@@ -245,24 +251,21 @@ async function sendGPTI2IFromAttachments(attachments, prompt, size = '1024x1024'
         console.error('❌ Discord 첨부파일 i2i 요청 실패:', err.message);
         throw err;
     } finally {
-        console.log('🧹 임시 파일 정리 중...');
-        // 임시 파일 정리
+        // 임시 파일 정리 (조용히)
         for (const file of tempFiles) {
             try { 
                 fs.unlinkSync(file);
-                console.log(`🗑️ 임시 파일 삭제: ${file}`);
             } catch (e) {
-                console.error(`❌ 임시 파일 삭제 실패: ${file}`, e.message);
+                // 파일 삭제 실패는 조용히 무시
             }
         }
-        // 폴더 비우기(남은 파일 없으면 삭제)
+        // 폴더 비우기
         try {
             if (fs.existsSync(tempDir) && fs.readdirSync(tempDir).length === 0) {
                 fs.rmdirSync(tempDir);
-                console.log('🗑️ 임시 디렉토리 삭제:', tempDir);
             }
         } catch (e) {
-            console.error('❌ 임시 디렉토리 삭제 실패:', e.message);
+            // 디렉토리 삭제 실패는 조용히 무시
         }
     }
 }
