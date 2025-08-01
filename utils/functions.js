@@ -6,11 +6,13 @@ const { emojiDict } = require('./mapping');
  * @returns {string} 이모지가 긴 형태로 변환된 텍스트
  */
 function toLongEmoji(text) {
-    // Generate a regular expression pattern from the keys of the dictionary
-    const emojiPattern = new RegExp(Object.keys(emojiDict).map(key => key.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1")).join("|"), "g");
-
-    // Use the generated pattern to replace the shortcuts in the text
-    return text.replace(emojiPattern, (match) => emojiDict[match]);
+    // 정규표현식으로 :emoji_name: 형태의 텍스트를 찾아서 emojiDict에서 치환
+    const emojiPattern = /:([a-zA-Z0-9_]+):/g;
+    
+    return text.replace(emojiPattern, (match, emojiName) => {
+        const fullMatch = `:${emojiName}:`;
+        return emojiDict[fullMatch] || match; // emojiDict에 없으면 원본 반환
+    });
 }
 
 /**
@@ -27,16 +29,6 @@ function toShortEmoji(text) {
         // Return emoji name with underscores preserved
         return `:${p1}:`;
     });
-}
-
-/**
- * 텍스트의 이모지를 긴 형태로 변환하여 출력을 편집합니다.
- * @param {string} text - 편집할 텍스트
- * @returns {string} 이모지가 긴 형태로 변환된 텍스트
- */
-function editOutput(text){
-    text = toLongEmoji(text);
-    return text;
 }
 
 /**
@@ -238,4 +230,4 @@ function base64url(source) {
         .replace(/\//g, "_");
 }
 
-module.exports = {toShortEmoji,editOutput, sendLongMessage, sendLongNormalMessage, extractTextFromResponse,sendLog, sendGeminiLog,generateJWT,getAccessToken};
+module.exports = {toShortEmoji,toLongEmoji, sendLongMessage, sendLongNormalMessage, extractTextFromResponse,sendLog, sendGeminiLog,generateJWT,getAccessToken};

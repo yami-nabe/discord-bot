@@ -1,6 +1,6 @@
 require('dotenv/config');
 const { Client, Events, GatewayIntentBits } = require('discord.js');
-const { editOutput, sendLongMessage, toShortEmoji } = require("../utils/functions");
+const { sendLongMessage, toShortEmoji, toLongEmoji } = require("../utils/functions");
 const { sendGPTRequest } = require("../utils/gptRequest");
 
 let messages = [];
@@ -66,6 +66,11 @@ function createPrompt(userMessage){
           content: userMessage,
       }
   ];
+}
+
+function editOutput(text){
+  text = toLongEmoji(text);
+  return text;
 }
 
 // Event listener for message reactions
