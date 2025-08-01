@@ -1,5 +1,10 @@
 const { emojiDict } = require('./mapping');
 
+/**
+ * 텍스트에서 이모지 단축어를 긴 형태의 Discord 이모지로 변환합니다.
+ * @param {string} text - 변환할 텍스트
+ * @returns {string} 이모지가 긴 형태로 변환된 텍스트
+ */
 function toLongEmoji(text) {
     // Generate a regular expression pattern from the keys of the dictionary
     const emojiPattern = new RegExp(Object.keys(emojiDict).map(key => key.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1")).join("|"), "g");
@@ -8,23 +13,38 @@ function toLongEmoji(text) {
     return text.replace(emojiPattern, (match) => emojiDict[match]);
 }
 
+/**
+ * Discord의 긴 형태 이모지를 짧은 형태로 변환합니다.
+ * @param {string} text - 변환할 텍스트
+ * @returns {string} 이모지가 짧은 형태(:emoji_name:)로 변환된 텍스트
+ */
 function toShortEmoji(text) {
     // Regular expression to match full-name emojis, both static and animated
     const emojiPattern = /<a?:([a-zA-Z0-9_]+):\d+>/g;
 
     // Replace full-name emojis with their shorter form
     return text.replace(emojiPattern, (match, p1) => {
-        // Convert underscores to spaces in the extracted emoji name
-        const shortName = p1.replace(/_/g, ' ');
-        return `:${shortName}:`;
+        // Return emoji name with underscores preserved
+        return `:${p1}:`;
     });
 }
 
+/**
+ * 텍스트의 이모지를 긴 형태로 변환하여 출력을 편집합니다.
+ * @param {string} text - 편집할 텍스트
+ * @returns {string} 이모지가 긴 형태로 변환된 텍스트
+ */
 function editOutput(text){
     text = toLongEmoji(text);
     return text;
 }
 
+/**
+ * 긴 메시지를 여러 개의 작은 메시지로 나누어 전송합니다.
+ * @param {Object} message - Discord 메시지 객체
+ * @param {string} content - 전송할 내용
+ * @returns {Promise<void>}
+ */
 async function sendLongMessage(message, content) {
     const MAX_LENGTH = 2000;
     let startIndex = 0;
@@ -43,6 +63,12 @@ async function sendLongMessage(message, content) {
     }
 }
 
+/**
+ * 긴 메시지를 여러 개의 작은 메시지로 나누어 채널에 전송합니다.
+ * @param {Object} channel - Discord 채널 객체
+ * @param {string} content - 전송할 내용
+ * @returns {Promise<void>}
+ */
 async function sendLongNormalMessage(channel, content) {
     const MAX_LENGTH = 2000;
     let startIndex = 0;
@@ -55,6 +81,11 @@ async function sendLongNormalMessage(channel, content) {
     }
 }
 
+/**
+ * 스트리밍 응답에서 텍스트를 추출합니다.
+ * @param {string} response - 스트리밍 응답 데이터
+ * @returns {string} 추출된 텍스트
+ */
 function extractTextFromResponse(response) {
     // Split the response into individual lines
     const lines = response.split('\n');
@@ -73,6 +104,12 @@ function extractTextFromResponse(response) {
     return collectedText;
 }
 
+/**
+ * 대화 로그를 포맷팅하여 메시지로 전송합니다.
+ * @param {Object} message - Discord 메시지 객체
+ * @param {Array} messages - 대화 메시지 배열
+ * @returns {Promise<void>}
+ */
 async function sendLog(message, messages){
     const logOutput = messages.map((msg, index) => {
         const rolePrefix = msg.role === 'user' ? 'U' : 'A';
@@ -81,6 +118,12 @@ async function sendLog(message, messages){
     await sendLongMessage(message, `Current log:\n\`\`\`\n${logOutput}\n\`\`\``);
 }
 
+/**
+ * Gemini 대화 로그를 포맷팅하여 메시지로 전송합니다.
+ * @param {Object} message - Discord 메시지 객체
+ * @param {Array} messages - Gemini 대화 메시지 배열
+ * @returns {Promise<void>}
+ */
 async function sendGeminiLog(message, messages){
     // Generate the log output by mapping over the messages array
     const logOutput = messages.map((msg, index) => {
@@ -97,6 +140,14 @@ async function sendGeminiLog(message, messages){
     // Send the formatted log output as a long message in a code block
     await sendLongMessage(message, `Current log:\`\`\`\n${logOutput}\n\`\`\``);
 }
+
+/**
+ * Google OAuth2 액세스 토큰을 가져옵니다.
+ * @param {string} clientEmail - Google 서비스 계정 이메일
+ * @param {string} privateKey - Google 서비스 계정 개인 키
+ * @returns {Promise<string>} 액세스 토큰
+ * @throws {Error} 토큰 가져오기 실패 시 에러
+ */
 async function getAccessToken(clientEmail, privateKey) {
     const jwt = await generateJWT(clientEmail, privateKey);
     const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -123,6 +174,14 @@ async function getAccessToken(clientEmail, privateKey) {
     }
     return accessToken;
 }
+
+/**
+ * Google 서비스 계정을 위한 JWT 토큰을 생성합니다.
+ * @param {string} clientEmail - Google 서비스 계정 이메일
+ * @param {string} privateKey - Google 서비스 계정 개인 키
+ * @returns {Promise<string>} JWT 토큰
+ * @throws {Error} 유효하지 않은 이메일이나 개인 키일 경우 에러
+ */
 async function generateJWT(clientEmail, privateKey) {
     if (!clientEmail.includes("gserviceaccount.com")) {
         throw new Error("Invalid Vertex project id. Must include gserviceaccount.com");
@@ -152,6 +211,12 @@ async function generateJWT(clientEmail, privateKey) {
     const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(`${encodedHeader}.${encodedClaimSet}`));
     return `${encodedHeader}.${encodedClaimSet}.${base64url(new Uint8Array(signature))}`;
 }
+
+/**
+ * PEM 형식의 개인 키를 ArrayBuffer로 변환합니다.
+ * @param {string} privateKey - PEM 형식의 개인 키
+ * @returns {ArrayBuffer} 변환된 ArrayBuffer
+ */
 function str2ab(privateKey) {
     const binaryString = atob(privateKey.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\\n/g, ""));
     const bytes = new Uint8Array(binaryString.length);
@@ -160,10 +225,17 @@ function str2ab(privateKey) {
     }
     return bytes.buffer;
 }
+
+/**
+ * 데이터를 base64url 형식으로 인코딩합니다.
+ * @param {Uint8Array} source - 인코딩할 데이터
+ * @returns {string} base64url로 인코딩된 문자열
+ */
 function base64url(source) {
     return btoa(String.fromCharCode.apply(null, [...source]))
         .replace(/=+$/, "")
         .replace(/\+/g, "-")
         .replace(/\//g, "_");
 }
+
 module.exports = {toShortEmoji,editOutput, sendLongMessage, sendLongNormalMessage, extractTextFromResponse,sendLog, sendGeminiLog,generateJWT,getAccessToken};
