@@ -1,7 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const FormData = require('form-data');
 require('dotenv/config');
 
 const IMG_URL = process.env.IMG_URL;
@@ -33,7 +32,7 @@ async function sendGPTImageRequest(prompt, size = '1024x1024', quality = 'medium
                     'Content-Type': 'application/json',
                     'User-Agent': 'Discord-Bot/1.0'
                 },
-                timeout: 60000 // 60초 타임아웃
+                timeout: 180000 // 3분 타임아웃
             }
         );
         return response.data;
@@ -55,39 +54,39 @@ async function sendGPTImageRequest(prompt, size = '1024x1024', quality = 'medium
  */
 async function sendGPTI2IRequest(imageFiles, prompt, size = '1024x1024', quality = 'medium', model = 'gpt-image-1', n = 1) {
     try {
-        // FormData 생성
-        const form = new FormData();
+        // 이미지 파일들을 base64로 변환
+        const base64Images = [];
         
-        // 이미지 파일들 추가
-        imageFiles.forEach((filePath, idx) => {
+        for (const filePath of imageFiles) {
             if (fs.existsSync(filePath)) {
-                form.append('image', fs.createReadStream(filePath), {
-                    filename: `image${idx + 1}${path.extname(filePath)}`
-                });
+                const imageBuffer = fs.readFileSync(filePath);
+                const base64String = imageBuffer.toString('base64');
+                const mimeType = getMimeType(path.extname(filePath));
+                base64Images.push(`data:${mimeType};base64,${base64String}`);
             }
-        });
+        }
         
-        // 기타 파라미터 추가
-        form.append('model', model);
-        form.append('prompt', prompt);
-        form.append('n', n);
-        form.append('quality', quality);
-        form.append('size', size);
-        
-        // 헤더
-        const headers = {
-            ...form.getHeaders(),
-            Authorization: `Bearer ${IMG_KEY}`,
-            'User-Agent': 'Discord-Bot/1.0'
+        // 요청 데이터 구성
+        const requestData = {
+            model: model,
+            prompt: prompt,
+            n: n,
+            quality: quality,
+            size: size,
+            images: base64Images
         };
         
         // 요청
         const response = await axios.post(
             `${IMG_URL}/v1/images/edits`,
-            form,
+            requestData,
             { 
-                headers,
-                timeout: 60000 // 60초 타임아웃
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${IMG_KEY}`,
+                    'User-Agent': 'Discord-Bot/1.0'
+                },
+                timeout: 180000 // 3분 타임아웃
             }
         );
         return response.data;
@@ -188,6 +187,26 @@ function getQualityByChannel(channelId) {
     // 특정 채널에서는 고품질 사용
     const highQualityChannels = ['1389918297562026026'];
     return highQualityChannels.includes(channelId) ? 'high' : 'medium';
+}
+
+/**
+ * 파일 확장자에 따른 MIME 타입을 반환하는 헬퍼 함수
+ * @param {string} ext - 파일 확장자
+ * @returns {string} - MIME 타입
+ */
+function getMimeType(ext) {
+    const extLower = ext.toLowerCase();
+    switch (extLower) {
+        case '.jpg':
+        case '.jpeg':
+            return 'image/jpeg';
+        case '.png':
+            return 'image/png';
+        case '.webp':
+            return 'image/webp';
+        default:
+            return 'image/jpeg'; // 기본값
+    }
 }
 
 module.exports = {
