@@ -38,7 +38,38 @@ async function sendGPTImageRequest(prompt, size = '1024x1024', quality = 'medium
         );
         return response.data;
     } catch (error) {
-        console.error('이미지 생성 API 에러:', error.response?.data || error.message);
+        if (error.response) {
+            const status = error.response.status;
+            const statusText = error.response.statusText;
+            const errorData = error.response.data;
+            
+            // 상태 코드별 간단한 메시지
+            let errorMessage = '';
+            if (status === 403) {
+                errorMessage = 'API 키 권한 없음 또는 잘못된 키';
+            } else if (status === 401) {
+                errorMessage = '인증 실패 - API 키 확인 필요';
+            } else if (status === 400) {
+                errorMessage = '잘못된 요청 - 파라미터 확인 필요';
+            } else if (status === 429) {
+                errorMessage = '요청 한도 초과';
+            } else {
+                errorMessage = `${status} ${statusText}`;
+            }
+            
+            console.error(`❌ 이미지 생성 API 에러: ${errorMessage}`);
+            
+            // 에러 상세 정보 (간단히)
+            if (errorData && errorData.error) {
+                const detail = errorData.error.message || errorData.error.type || '알 수 없는 에러';
+                console.error(`   상세: ${detail}`);
+            }
+        } else if (error.request) {
+            console.error('❌ 네트워크 에러: 서버 응답 없음');
+        } else {
+            console.error('❌ 요청 에러:', error.message);
+        }
+        
         throw error;
     }
 }
@@ -132,33 +163,36 @@ async function sendGPTI2IRequest(imageFiles, prompt, size = '1024x1024', quality
         
         return response.data;
     } catch (error) {
-        console.error('❌ i2i 이미지 생성 API 에러:');
-        
         if (error.response) {
-            console.error(`상태: ${error.response.status} - ${error.response.statusText}`);
-            
-            // 에러 응답 데이터에서 중요한 정보만 추출
+            const status = error.response.status;
+            const statusText = error.response.statusText;
             const errorData = error.response.data;
-            if (errorData) {
-                if (errorData.error) {
-                    console.error('에러:', errorData.error.message || errorData.error);
-                } else if (errorData.message) {
-                    console.error('메시지:', errorData.message);
-                } else {
-                    // base64 문자열 축약하여 간단히 출력
-                    const simpleError = JSON.stringify(errorData, (key, value) => {
-                        if (typeof value === 'string' && value.length > 50) {
-                            return value.substring(0, 50) + '...';
-                        }
-                        return value;
-                    });
-                    console.error('응답:', simpleError);
-                }
+            
+            // 상태 코드별 간단한 메시지
+            let errorMessage = '';
+            if (status === 403) {
+                errorMessage = 'API 키 권한 없음 또는 잘못된 키';
+            } else if (status === 401) {
+                errorMessage = '인증 실패 - API 키 확인 필요';
+            } else if (status === 400) {
+                errorMessage = '잘못된 요청 - 파라미터 확인 필요';
+            } else if (status === 429) {
+                errorMessage = '요청 한도 초과';
+            } else {
+                errorMessage = `${status} ${statusText}`;
+            }
+            
+            console.error(`❌ API 에러: ${errorMessage}`);
+            
+            // 에러 상세 정보 (간단히)
+            if (errorData && errorData.error) {
+                const detail = errorData.error.message || errorData.error.type || '알 수 없는 에러';
+                console.error(`   상세: ${detail}`);
             }
         } else if (error.request) {
-            console.error('네트워크 에러: 요청은 전송되었지만 응답이 없음');
+            console.error('❌ 네트워크 에러: 서버 응답 없음');
         } else {
-            console.error('에러:', error.message);
+            console.error('❌ 요청 에러:', error.message);
         }
         
         throw error;
