@@ -150,9 +150,7 @@ client.on('messageCreate', async message => {
             userMessage: userMessage.trim(),
             isI2I: hasAttachments,
             attachments: hasAttachments ? Array.from(message.attachments.values()) : null
-        });
-        // 큐 처리 시작
-        imageQueue.processNext(processImageRequest);
+        }, processImageRequest);
     } catch (error) {
         console.error('Queue Error:', error);
     }

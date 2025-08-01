@@ -4,8 +4,8 @@ const path = require('path');
 const FormData = require('form-data');
 require('dotenv/config');
 
-const REVERSE_PROXY_URL = process.env.REVERSE_PROXY_IMG;
-const REVERSE_PROXY_KEY = process.env.REVERSE_PROXY_KEY;
+const IMG_URL = process.env.IMG_URL;
+const IMG_KEY = process.env.IMG_KEY;
 
 /**
  * GPT 이미지 생성 API 요청 함수 (t2i)
@@ -19,7 +19,7 @@ const REVERSE_PROXY_KEY = process.env.REVERSE_PROXY_KEY;
 async function sendGPTImageRequest(prompt, size = '1024x1024', quality = 'medium', model = 'gpt-image-1', n = 1) {
     try {
         const response = await axios.post(
-            `${REVERSE_PROXY_URL}/v1/images/generations`,
+            `${IMG_URL}/v1/images/generations`,
             {
                 model: model,
                 prompt: prompt,
@@ -29,7 +29,7 @@ async function sendGPTImageRequest(prompt, size = '1024x1024', quality = 'medium
             },
             {
                 headers: {
-                    Authorization: `Bearer ${REVERSE_PROXY_KEY}`,
+                    Authorization: `Bearer ${IMG_KEY}`,
                     'Content-Type': 'application/json',
                     'User-Agent': 'Discord-Bot/1.0'
                 },
@@ -77,13 +77,13 @@ async function sendGPTI2IRequest(imageFiles, prompt, size = '1024x1024', quality
         // 헤더
         const headers = {
             ...form.getHeaders(),
-            Authorization: `Bearer ${REVERSE_PROXY_KEY}`,
+            Authorization: `Bearer ${IMG_KEY}`,
             'User-Agent': 'Discord-Bot/1.0'
         };
         
         // 요청
         const response = await axios.post(
-            `${REVERSE_PROXY_URL}/v1/images/edits`,
+            `${IMG_URL}/v1/images/edits`,
             form,
             { 
                 headers,

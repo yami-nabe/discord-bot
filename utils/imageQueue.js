@@ -12,9 +12,10 @@ class ImageRequestQueue {
     /**
      * 큐에 이미지 생성 요청 추가 (t2i/i2i 공통)
      * @param {object} req - 요청 정보 객체 { message, size, userMessage, isI2I, attachments }
+     * @param {Function} processRequest - 실제 요청을 처리하는 함수
      * @returns {Promise<void>}
      */
-    async addRequest(req) {
+    async addRequest(req, processRequest) {
         return new Promise((resolve, reject) => {
             const requestObj = {
                 ...req,
@@ -36,7 +37,7 @@ class ImageRequestQueue {
             }, this.timeout * 1000); // ms 단위
 
             this.queue.push(requestObj);
-            this.processNext();
+            this.processNext(processRequest);
         });
     }
 
