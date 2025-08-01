@@ -10,7 +10,7 @@ require('dotenv/config');
 async function sendGPTRequest(prompt, model = 'gpt-4.1') {
   try {
     const response = await axios.post(
-      `${process.env.TAIYAKI_URL}/v1/chat/completions`,
+      `${process.env.TAIYAKI_URL}/openai/v1/chat/completions`,
       {
         model: model,
         messages: prompt,
