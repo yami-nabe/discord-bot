@@ -1,6 +1,6 @@
 require('dotenv/config');
 const { Client, GatewayIntentBits, AttachmentBuilder } = require('discord.js');
-const { sendGPTImageRequest, sendGPTI2IFromAttachments, getImageSize, getQualityByChannel } = require('../utils/gptImageRequest');
+const { sendGPTImageRequest, sendGPTI2IFromAttachments, getImageSize, getQualityByChannel } = require('../utils/gptImageRequest2');
 const ImageRequestQueue = require('../utils/imageQueue');
 
 const client = new Client({
