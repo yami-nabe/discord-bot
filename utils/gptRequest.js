@@ -4,10 +4,10 @@ require('dotenv/config');
 /**
  * GPT 요청을 프록시 서버로 보내는 함수
  * @param {Array} prompt - GPT API 형식의 메시지 배열
- * @param {string} model - 사용할 모델명 (기본값: gpt-4.1)
+ * @param {string} model - 사용할 모델명 (기본값: gpt-5-chat-latest)
  * @returns {Promise} - API 응답
  */
-async function sendGPTRequest(prompt, model = 'gpt-4.1') {
+async function sendGPTRequest(prompt, model = 'gpt-5-chat-latest') {
   try {
     const response = await axios.post(
       `${process.env.TAIYAKI_URL}/openai/v1/chat/completions`,
