@@ -17,7 +17,6 @@ async function sendImagenRequest(prompt, aspectRatio = '1:1') {
             {
                 prompt: prompt,
                 config: {
-                    numberOfImages: 1,
                     outputMimeType: 'image/jpeg',
                     personGeneration: 'ALLOW_ALL',
                     aspectRatio: aspectRatio,
