@@ -101,7 +101,6 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
             generationConfig: config,
             safetySettings: defaultSafetySettings,
         };
-        console.log('Taiyaki AI 요청 데이터:', JSON.stringify(requestData, null, 2));
 
         // Taiyaki AI 프록시에 POST 요청 보내기
         const result = await axios.post(
@@ -117,7 +116,6 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
 
         // 응답 데이터 구조에 맞게 텍스트 추출
         const reply = result.data;
-        console.log('Taiyaki AI 응답:', JSON.stringify(reply, null, 2));
         
         return reply?.candidates?.[0]?.content?.parts?.[0]?.text || "응답을 받지 못했습니다.";
 
