@@ -1,9 +1,9 @@
 require('dotenv/config');
 const axios = require('axios');
-const {GoogleGenerativeAI, HarmCategory, HarmBlockThreshold} = require("@google/generative-ai");
 const {getAccessToken} = require("./botFunction");
 
 const API_KEY = process.env.GEMINI_API;
+const TAIYAKI_KEY = process.env.TAIYAKI_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
 // 기본 안전 설정
@@ -73,37 +73,37 @@ async function sendVertexRequest(chatHistory, generationConfig = {}) {
 }
 
 /**
- * Gemini AI에 요청을 보내는 범용 함수
+ * Gemini AI에 요청을 보내는 범용 함수 (Taiyaki AI 프록시 사용)
  * @param {Array} chatHistory - 채팅 히스토리 배열 (role과 parts를 포함한 객체들)
  * @param {Object} generationConfig - 생성 설정 (maxOutputTokens, temperature 등)
  * @returns {Promise<string>} AI 응답 텍스트
  */
 async function sendGeminiRequest(chatHistory, generationConfig = {}) {
     try {
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        
         // 기본 설정과 사용자 설정 병합
         const config = { ...defaultGenerationConfig, ...generationConfig };
 
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-pro',
-            safetySettings: defaultSafetySettings,
-        });
+        // Taiyaki AI 프록시에 POST 요청 보내기
+        const result = await axios.post(
+            `https://taiyakiai.xyz/proxy/google/v1beta/models/gemini-2.5-pro:generateContent?key=${TAIYAKI_KEY}`,
+            {
+                contents: chatHistory,
+                generationConfig: config,
+                safetySettings: defaultSafetySettings,
+            },
+            {
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
 
-        const chat = model.startChat({
-            history: chatHistory,
-            generationConfig: config
-        });
-
-        // 마지막 메시지 전송
-        const lastMessage = chatHistory[chatHistory.length - 1];
-        const result = await chat.sendMessage(lastMessage.parts[0].text);
-        const reply = await result.response;
-
-        return reply.text();
+        // 응답 데이터 구조에 맞게 텍스트 추출
+        const reply = result.data;
+        return reply?.candidates?.[0]?.content?.parts?.[0]?.text || "응답을 받지 못했습니다.";
 
     } catch (error) {
-        console.error('Gemini AI 요청 중 오류 발생:', error);
+        console.error('Gemini AI 요청 중 오류 발생:', error.response ? error.response.data : error.message);
         throw new Error(`Gemini AI 요청 실패: ${error.message}`);
     }
 }
