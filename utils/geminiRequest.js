@@ -95,27 +95,43 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
         // 기본 설정과 사용자 설정 병합
         const config = { ...defaultGenerationConfig, ...generationConfig };
 
+        // 요청 데이터 로깅 (디버깅용)
+        const requestData = {
+            contents: chatHistory,
+            generationConfig: config,
+            safetySettings: defaultSafetySettings,
+        };
+        console.log('Taiyaki AI 요청 데이터:', JSON.stringify(requestData, null, 2));
+
         // Taiyaki AI 프록시에 POST 요청 보내기
         const result = await axios.post(
             `https://taiyakiai.xyz/proxy/google/v1beta/models/gemini-2.5-pro:generateContent?key=${TAIYAKI_KEY}`,
-            {
-                contents: chatHistory,
-                generationConfig: config,
-                safetySettings: defaultSafetySettings,
-            },
+            requestData,
             {
                 headers: {
                     "Content-Type": "application/json"
-                }
+                },
+                timeout: 30000 // 30초 타임아웃
             }
         );
 
         // 응답 데이터 구조에 맞게 텍스트 추출
         const reply = result.data;
+        console.log('Taiyaki AI 응답:', JSON.stringify(reply, null, 2));
+        
         return reply?.candidates?.[0]?.content?.parts?.[0]?.text || "응답을 받지 못했습니다.";
 
     } catch (error) {
-        console.error('Gemini AI 요청 중 오류 발생:', error.response ? error.response.data : error.message);
+        console.error('Taiyaki AI 요청 중 오류 발생:');
+        if (error.response) {
+            console.error('응답 상태:', error.response.status);
+            console.error('응답 헤더:', error.response.headers);
+            console.error('응답 데이터:', error.response.data);
+        } else if (error.request) {
+            console.error('요청 오류:', error.request);
+        } else {
+            console.error('오류 메시지:', error.message);
+        }
         throw new Error(`Gemini AI 요청 실패: ${error.message}`);
     }
 }
