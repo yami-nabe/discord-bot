@@ -95,41 +95,64 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
         // 기본 설정과 사용자 설정 병합
         const config = { ...defaultGenerationConfig, ...generationConfig };
 
-        // 요청 데이터 로깅 (디버깅용)
+        // 요청 URL과 데이터 로깅
+        const requestUrl = `https://taiyakiai.xyz/proxy/google/v1beta/models/gemini-2.5-pro:generateContent?key=${TAIYAKI_KEY}`;
         const requestData = {
             contents: chatHistory,
             generationConfig: config,
             safetySettings: defaultSafetySettings,
         };
+        const requestHeaders = {
+            "Content-Type": "application/json"
+        };
+
+        console.log('=== Gemini 요청 디버깅 ===');
+        console.log('요청 URL:', requestUrl);
+        console.log('TAIYAKI_KEY:', TAIYAKI_KEY ? `${TAIYAKI_KEY.substring(0, 10)}...` : 'undefined');
+        console.log('요청 헤더:', JSON.stringify(requestHeaders, null, 2));
+        console.log('요청 데이터:', JSON.stringify(requestData, null, 2));
+        console.log('========================');
 
         // Taiyaki AI 프록시에 POST 요청 보내기
         const result = await axios.post(
-            `https://taiyakiai.xyz/proxy/google/v1beta/models/gemini-2.5-pro:generateContent?key=${TAIYAKI_KEY}`,
+            requestUrl,
             requestData,
             {
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: requestHeaders,
                 timeout: 30000 // 30초 타임아웃
             }
         );
 
         // 응답 데이터 구조에 맞게 텍스트 추출
         const reply = result.data;
+        console.log('=== Gemini 응답 성공 ===');
+        console.log('응답 상태:', result.status);
+        console.log('응답 헤더:', JSON.stringify(result.headers, null, 2));
+        console.log('응답 데이터:', JSON.stringify(reply, null, 2));
+        console.log('========================');
         
         return reply?.candidates?.[0]?.content?.parts?.[0]?.text || "응답을 받지 못했습니다.";
 
     } catch (error) {
-        console.error('Taiyaki AI 요청 중 오류 발생:');
+        console.error('=== Gemini 요청 중 오류 발생 ===');
+        console.error('오류 타입:', error.constructor.name);
+        console.error('오류 메시지:', error.message);
+        
         if (error.response) {
             console.error('응답 상태:', error.response.status);
-            console.error('응답 헤더:', error.response.headers);
-            console.error('응답 데이터:', error.response.data);
+            console.error('응답 상태 텍스트:', error.response.statusText);
+            console.error('응답 헤더:', JSON.stringify(error.response.headers, null, 2));
+            console.error('응답 데이터:', JSON.stringify(error.response.data, null, 2));
         } else if (error.request) {
             console.error('요청 오류:', error.request);
+            console.error('요청 설정:', JSON.stringify(error.config, null, 2));
         } else {
-            console.error('오류 메시지:', error.message);
+            console.error('기타 오류:', error);
         }
+        
+        console.error('전체 오류 객체:', JSON.stringify(error, null, 2));
+        console.error('==============================');
+        
         throw new Error(`Gemini AI 요청 실패: ${error.message}`);
     }
 }
