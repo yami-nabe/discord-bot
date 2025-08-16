@@ -6,6 +6,18 @@ const API_KEY = process.env.GEMINI_API;
 const TAIYAKI_KEY = process.env.TAIYAKI_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
+// HarmCategory와 HarmBlockThreshold 상수 정의
+const HarmCategory = {
+    HARM_CATEGORY_HARASSMENT: 'HARM_CATEGORY_HARASSMENT',
+    HARM_CATEGORY_DANGEROUS_CONTENT: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+    HARM_CATEGORY_SEXUALLY_EXPLICIT: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+    HARM_CATEGORY_HATE_SPEECH: 'HARM_CATEGORY_HATE_SPEECH'
+};
+
+const HarmBlockThreshold = {
+    BLOCK_NONE: 'BLOCK_NONE'
+};
+
 // 기본 안전 설정
 const defaultSafetySettings = [
     {
