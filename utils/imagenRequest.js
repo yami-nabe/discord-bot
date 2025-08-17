@@ -1,7 +1,7 @@
 require('dotenv/config');
 const axios = require('axios');
 
-const IMAGEN_KEY = process.env.IMAGEN_KEY;
+const TAIYAKI_KEY = process.env.TAIYAKI_KEY;
 
 /**
  * Taiyaki AI 프록시를 통해 Google Imagen에 이미지 생성 요청을 보내는 함수
@@ -13,7 +13,7 @@ async function sendImagenRequest(prompt, aspectRatio = '1:1') {
     try {
         // Taiyaki AI 프록시에 POST 요청 보내기
         const result = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${IMAGEN_KEY}`,
+            `https://taiyakiai.xyz/proxy/google/v1beta/models/imagen-4.0-ultra-generate-001:generateImages?key=${TAIYAKI_KEY}`,
             {
                 prompt: prompt,
                 config: {
