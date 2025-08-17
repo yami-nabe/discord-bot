@@ -9,7 +9,7 @@ const IMAGEN_KEY = process.env.IMAGEN_KEY;
  * @param {string} aspectRatio - 이미지 비율 ('1:1', '4:3', '3:4')
  * @returns {Promise<Object>} 생성된 이미지 응답
  */
-async function sendImagenRequest2(prompt, aspectRatio = '1:1') {
+async function sendImagenRequest(prompt, aspectRatio = '1:1') {
     try {
         // Google AI Studio 인스턴스 생성
         const ai = new GoogleGenAI({
@@ -39,5 +39,5 @@ async function sendImagenRequest2(prompt, aspectRatio = '1:1') {
 }
 
 module.exports = {
-    sendImagenRequest2
+    sendImagenRequest
 };
