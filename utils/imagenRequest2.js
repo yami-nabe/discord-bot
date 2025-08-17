@@ -1,5 +1,5 @@
 require('dotenv/config');
-const { GoogleGenAI, PersonGeneration } = require('@google/genai');
+const axios = require('axios');
 
 const IMAGEN_KEY = process.env.IMAGEN_KEY;
 
@@ -30,38 +30,45 @@ async function sendImagenRequest(prompt, aspectRatio = '1:1') {
             throw new Error('API 키가 너무 짧습니다. 올바른 API 키인지 확인해주세요.');
         }
 
-        // Google AI Studio 인스턴스 생성
-        console.log('Google AI Studio 인스턴스 생성 중...');
-        const ai = new GoogleGenAI({
-            apiKey: IMAGEN_KEY,
-        });
-        console.log('Google AI Studio 인스턴스 생성 완료');
-
-        // Imagen 모델을 사용하여 이미지 생성 요청
-        console.log('Imagen API 요청 전송 중...');
+        // Google AI Studio REST API 직접 호출
+        console.log('Google AI Studio REST API 직접 호출 중...');
         console.log('사용 모델:', 'models/imagen-4.0-generate-001');
         
-        const response = await ai.models.generateImages({
-            model: 'models/imagen-4.0-generate-001',
+        const requestBody = {
             prompt: prompt,
             config: {
                 numberOfImages: 1,
                 outputMimeType: 'image/jpeg',
-                personGeneration: PersonGeneration.ALLOW_ALL,
+                personGeneration: 'ALLOW_ALL',
                 aspectRatio: aspectRatio,
                 imageSize: '1K',
-            },
-        });
+            }
+        };
+        
+        console.log('요청 본문:', JSON.stringify(requestBody, null, 2));
+        
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:generateImages?key=${IMAGEN_KEY}`,
+            requestBody,
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                timeout: 120000 // 2분 타임아웃 (이미지 생성은 시간이 오래 걸림)
+            }
+        );
 
         console.log('API 응답 수신 완료');
-        console.log('응답 구조:', Object.keys(response || {}));
+        console.log('HTTP 상태 코드:', response.status);
+        console.log('응답 헤더:', response.headers);
+        console.log('응답 구조:', Object.keys(response.data || {}));
         
-        if (response?.generatedImages) {
-            console.log('생성된 이미지 수:', response.generatedImages.length);
+        if (response.data?.generatedImages) {
+            console.log('생성된 이미지 수:', response.data.generatedImages.length);
         }
 
-        // 응답 데이터 반환
-        return response;
+        // 응답 데이터 반환 (axios 응답에서 data 부분만)
+        return response.data;
 
     } catch (error) {
         console.error('=== Imagen API 오류 상세 정보 ===');
@@ -69,11 +76,15 @@ async function sendImagenRequest(prompt, aspectRatio = '1:1') {
         console.error('오류 타입:', error.constructor.name);
         console.error('오류 스택:', error.stack);
         
-        // Google AI Studio API 특정 오류 정보
+        // Axios 오류 정보 (Google AI Studio API 응답)
         if (error.response) {
             console.error('HTTP 상태 코드:', error.response.status);
             console.error('응답 헤더:', error.response.headers);
             console.error('응답 데이터:', error.response.data);
+        } else if (error.request) {
+            console.error('요청이 전송되었지만 응답을 받지 못함:', error.request);
+        } else {
+            console.error('요청 설정 중 오류 발생:', error.message);
         }
         
         if (error.code) {
