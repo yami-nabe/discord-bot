@@ -13,7 +13,7 @@ async function sendImagenRequest(prompt, aspectRatio = '1:1') {
     try {
         // Taiyaki AI 프록시에 POST 요청 보내기
         const result = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:generateImages?key=${IMAGEN_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${IMAGEN_KEY}`,
             {
                 prompt: prompt,
                 config: {
