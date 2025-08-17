@@ -48,7 +48,7 @@ async function sendImagenRequest(prompt, aspectRatio = '1:1') {
         console.log('요청 본문:', JSON.stringify(requestBody, null, 2));
         
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:generateImages?key=${IMAGEN_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${IMAGEN_KEY}`,
             requestBody,
             {
                 headers: {
