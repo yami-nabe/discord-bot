@@ -2,6 +2,7 @@ require('dotenv/config');
 const { Client, GatewayIntentBits, AttachmentBuilder } = require('discord.js');
 const { sendImagenRequest } = require('../utils/imagenRequest2');
 const { sendGPTImageRequest, sendGPTI2IFromAttachments, getImageSize, getQualityByChannel } = require('../utils/gptImageRequest');
+const { sendGeminiT2IRequest, sendGeminiI2IFromAttachments } = require('../utils/geminiImageRequest');
 const ImageRequestQueue = require('../utils/imageQueue');
 
 const client = new Client({
@@ -18,12 +19,13 @@ let messages = [];
 const CHANNELS = ['1386548798607589406', '1389918297562026026'];
 
 client.once('ready', () => {
-    console.log('Discord 이미지 봇이 준비되었습니다. (GPT + Imagen)');
+    console.log('Discord 이미지 봇이 준비되었습니다. (GPT + Imagen + Gemini)');
 });
 
-// gpt와 imagen 두 가지 명령어 지원
+// gpt와 imagen, gemini 명령어 지원
 const gptPromptRegex = /^\s?gpt\s{0,3}```([pls])?\s?([\s\S]+)```/i;
 const imagenPromptRegex = /^\s?imagen\s{0,3}```([pls])?\s?([\s\S]+)```/i;
+const geminiPromptRegex = /^\s?gemini\s{0,3}```([pls])?\s?([\s\S]+)```/i;
 
 // 이미지 메시지 ID를 추적하기 위한 맵
 const imageMessageMap = new Map(); // key: 이미지 메시지 ID, value: { originMessageId, imageBuffer }
@@ -79,6 +81,33 @@ async function processImageRequest(request) {
             } else {
                 await sendImageMessage(request.message, imageBytes);
             }
+        } else if (request.type === 'gemini') {
+            // Gemini 요청 처리
+            const finalPrompt = request.aspectRatio ? `${request.userMessage}\n\n[Aspect Ratio: ${request.aspectRatio}]` : request.userMessage;
+            if (request.attachments && request.attachments.length > 0) {
+                response = await sendGeminiI2IFromAttachments(request.attachments, finalPrompt);
+            } else {
+                response = await sendGeminiT2IRequest(finalPrompt);
+            }
+            
+            if (request.cancelled) {
+                return;
+            }
+            if (!response.data || !response.data[0] || !response.data[0].b64_json) {
+                await request.message.reply('이미지가 검열되어 생성되지 않았습니다.');
+                return;
+            }
+            const b64Json = response.data[0].b64_json;
+            let imageMsg = null;
+            if (request.message.channelId === '1389918297562026026') {
+                imageMsg = await sendImageMessage(request.message, b64Json);
+                // 💾 이모지 추가
+                try { await imageMsg.react('💾'); } catch (e) { console.warn('💾 이모지 추가 실패:', e); }
+                // 이미지 메시지 맵에 저장 (버퍼도 저장)
+                imageMessageMap.set(imageMsg.id, { originMessageId: request.message.id, imageBuffer: Buffer.from(b64Json, 'base64') });
+            } else {
+                await sendImageMessage(request.message, b64Json);
+            }
         } else {
             // GPT 요청 처리
             const quality = getQualityByChannel(request.message.channelId);
@@ -121,7 +150,11 @@ async function processImageRequest(request) {
             } else if (error && error.message === 'API 요청 실패') {
                 await request.message.reply('이미지 생성 중 서버 오류가 발생했습니다.');
             } else if (error && error.message === 'too_many_images') {
-                await request.message.reply('최대 8개까지의 이미지만 첨부할 수 있습니다.');
+                if (request.type === 'gemini') {
+                    await request.message.reply('최대 2개까지의 이미지만 첨부할 수 있습니다.');
+                } else {
+                    await request.message.reply('최대 8개까지의 이미지만 첨부할 수 있습니다.');
+                }
             } else if (error && error.message === 'unsupported_type') {
                 await request.message.reply('지원되지 않는 이미지 타입입니다.\n\n지원되는 이미지 타입: `jpg, png, webp`');
             } else if (error && error.message === 'file_too_large') {
@@ -191,6 +224,18 @@ client.on('messageCreate', async message => {
         if (aspectModifier === 'p') aspectRatio = '4:3';
         else if (aspectModifier === 'l') aspectRatio = '3:4';
     }
+    // gemini 명령어 확인
+    else if (geminiPromptRegex.test(message.content)) {
+        requestType = 'gemini';
+        const matches = message.content.match(geminiPromptRegex);
+        const [, aspectModifier, prompt] = matches;
+        userMessage = prompt.trim();
+        // imagen과 동일한 규칙 사용 (p: 4:3, l: 3:4, 기본 1:1)
+        aspectRatio = '1:1';
+        if (aspectModifier === 'p') aspectRatio = '4:3';
+        else if (aspectModifier === 'l') aspectRatio = '3:4';
+        hasAttachments = message.attachments && message.attachments.size > 0;
+    }
     // 둘 다 해당하지 않으면 무시
     else {
         return;
@@ -218,6 +263,14 @@ client.on('messageCreate', async message => {
                 type: 'imagen',
                 aspectRatio,
                 userMessage,
+            }, processImageRequest);
+        } else if (requestType === 'gemini') {
+            await imageQueue.addRequest({
+                message,
+                type: 'gemini',
+                aspectRatio,
+                userMessage,
+                attachments: hasAttachments ? Array.from(message.attachments.values()) : null
             }, processImageRequest);
         }
     } catch (error) {
