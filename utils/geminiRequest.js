@@ -97,7 +97,7 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
 
         // Taiyaki AI 프록시에 POST 요청 보내기
         const result = await axios.post(
-            `https://taiyakiai.xyz/proxy/google/v1beta/models/gemini-2.5-pro:generateContent?key=${TAIYAKI_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`,
             {
                 contents: chatHistory,
                 generationConfig: config,
