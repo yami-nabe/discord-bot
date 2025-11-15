@@ -95,7 +95,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
       messages.splice(messages.length-2);
       
       try {
-          const response = await sendGPTRequest(createPrompt(userMessage), 'gpt-5-chat-latest');
+          const response = await sendGPTRequest(createPrompt(userMessage), 'gpt-5.1-2025-11-23');
           const reply = response.data.choices[0].message.content || "I'm sorry, I couldn't generate a response.";
           await sendLongMessage(origMessage, editOutput(reply));
           messages.push({ role: 'user', content: userMessage });

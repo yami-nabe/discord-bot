@@ -7,12 +7,13 @@ require('dotenv/config');
  * @param {string} model - 사용할 모델명 (기본값: gpt-5-chat-latest)
  * @returns {Promise} - API 응답
  */
-async function sendGPTRequest(prompt, model = 'gpt-5-chat-latest') {
+async function sendGPTRequest(prompt, model = 'gpt-5.1-2025-11-23') {
   try {
     const response = await axios.post(
       `${process.env.TAIYAKI_URL}/openai/v1/chat/completions`,
       {
         model: model,
+        reasoning: { effort: "none" },
         messages: prompt,
         max_tokens: 2000,
         temperature: 0.7,
