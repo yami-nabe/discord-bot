@@ -299,4 +299,4 @@ client.on('messageCreate', async (message) => {
 // ───────────────────────────────────────────────
 // 로그인
 // ───────────────────────────────────────────────
-client.login(process.env.GPT_TOKEN);
+client.login(process.env.SUPA_TOKEN);
