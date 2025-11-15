@@ -14,7 +14,7 @@ async function sendGPTRequest(prompt, model = 'gpt-5.1-2025-11-23') {
       {
         model: model,
         messages: prompt,
-        max_tokens: 2000,
+        max_completion_tokens: 2000,
         temperature: 0.7,
         stream: false
       },
