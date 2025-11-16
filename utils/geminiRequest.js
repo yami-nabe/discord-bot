@@ -3,7 +3,6 @@ const axios = require('axios');
 const {getAccessToken} = require("./functions");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const TAIYAKI_KEY = process.env.TAIYAKI_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
 // HarmCategory와 HarmBlockThreshold 상수 정의
@@ -85,7 +84,7 @@ async function sendVertexRequest(chatHistory, generationConfig = {}) {
 }
 
 /**
- * Gemini AI에 요청을 보내는 범용 함수 (Taiyaki AI 프록시 사용)
+ * Gemini AI에 요청을 보내는 범용 함수
  * @param {Array} chatHistory - 채팅 히스토리 배열 (role과 parts를 포함한 객체들)
  * @param {Object} generationConfig - 생성 설정 (maxOutputTokens, temperature 등)
  * @returns {Promise<string>} AI 응답 텍스트
@@ -107,7 +106,7 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                timeout: 30000 // 30초 타임아웃
+                timeout: 90000 // 90초 타임아웃
             }
         );
 
@@ -116,7 +115,14 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
         return reply?.candidates?.[0]?.content?.parts?.[0]?.text || "응답을 받지 못했습니다.";
 
     } catch (error) {
-        console.error('Gemini AI 요청 중 오류 발생:', error.message);
+        if (error.response) {
+            console.error(
+              'Gemini AI 요청 중 오류 발생:',
+              JSON.stringify(error.response.data, null, 2)
+            );
+        } else {
+            console.error('Gemini AI 요청 중 오류 발생:', error.message);
+        }
         throw new Error(`Gemini AI 요청 실패: ${error.message}`);
     }
 }

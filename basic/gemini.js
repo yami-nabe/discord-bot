@@ -124,7 +124,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
           messages.splice(0, messages.length - 40);
         }
       } else {
-        await origMessage.reply("두 API 모두 응답 생성에 실패했습니다.");
+        await origMessage.reply("응답 생성에 실패했습니다.");
       }
     } catch (error) {
       console.error('API Error:', error);
@@ -231,11 +231,11 @@ client.on('messageCreate', async message => {
         messages.splice(0, messages.length - 40);
       }
     } else {
-      await message.reply("두 API 모두 응답 생성에 실패했습니다.");
+      await message.reply("응답 생성에 실패했습니다.");
     }
   } catch (error) {
     console.error('All API attempts failed:', error);
-    await message.reply("두 API 모두 응답 생성에 실패했습니다.");
+    await message.reply("응답 생성에 실패했습니다.");
   }
 });
 
