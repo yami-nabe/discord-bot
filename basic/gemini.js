@@ -197,13 +197,14 @@ client.on('messageCreate', async message => {
     } catch (geminiError) {
       console.error('Gemini API Error:', geminiError);
       // Gemini 실패 시 Vertex로 폴백
+      /*
       try {
         replyText = await sendVertexRequest(createPrompt(userMessage));
         console.log('Successfully fallback to Vertex API');
         success = true;
       } catch (vertexError) {
         console.error('Vertex API Error:', vertexError);
-      }
+      }*/
     }
 
     if (success && replyText) {
