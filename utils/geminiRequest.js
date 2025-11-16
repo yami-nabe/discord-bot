@@ -2,7 +2,7 @@ require('dotenv/config');
 const axios = require('axios');
 const {getAccessToken} = require("./functions");
 
-const API_KEY = process.env.GEMINI_API;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TAIYAKI_KEY = process.env.TAIYAKI_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
