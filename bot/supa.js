@@ -199,7 +199,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   if (interaction.commandName === 'gacha') {
-    const result = await handleGachaCommand(interaction.user.id);
+    const result = await handleGachaCommand(interaction.user.id, interaction.channelId);
     if (result.embed) {
       result.embed.setAuthor({
         name: interaction.user.username,

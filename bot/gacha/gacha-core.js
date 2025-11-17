@@ -12,6 +12,20 @@ const BASE_GACHA_RATES = {
 // 레어팩 확률 (0.05%)
 const RARE_PACK_RATE = 0.0005;
 
+// 6성이 등장할 수 있는 채널 ID
+const SIX_STAR_CHANNEL_ID = '1408784608820068443';
+
+function canReceiveSixStar(channelId) {
+    return channelId && String(channelId) === SIX_STAR_CHANNEL_ID;
+}
+
+function adjustRarityForChannel(rarity, channelId) {
+    if (rarity === 6 && !canReceiveSixStar(channelId)) {
+        return 5;
+    }
+    return rarity;
+}
+
 function getDynamicFiveStarRate(noFiveStarCount) {
     // 이벤트 확률이 있으면 5성 확률도 이벤트 확률 사용
     const eventRates = getEventGachaRate();
@@ -83,7 +97,7 @@ function generateRandomCharacter(rarity) {
 }
 
 // 레어팩 실행 함수
-function generateRarePackResult() {
+function generateRarePackResult(channelId) {
     const dictionary = loadGachaDictionary();
     if (!dictionary) return [];
     
@@ -93,12 +107,8 @@ function generateRarePackResult() {
     for (let i = 0; i < 10; i++) {
         // 6성: 20%, 5성: 80% 확률로 설정
         const random = Math.random();
-        let rarity;
-        if (random <= 0.2) {
-            rarity = 6; // 6성 20%
-        } else {
-            rarity = 5; // 5성 80%
-        }
+        let rarity = random <= 0.2 ? 6 : 5;
+        rarity = adjustRarityForChannel(rarity, channelId);
         
         const rarityKey = `${rarity}성`;
         const rarityCharacters = dictionary[rarityKey];
@@ -118,14 +128,15 @@ function generateRarePackResult() {
 }
 
 // user: 유저 객체, isTenDayGuarantee: 10일 보장 여부
+// channelId: 가챠가 실행된 채널 ID
 // 반환값: { results, characters, newNoFiveStarCount, isRarePack }
-function performGacha(user, isTenDayGuarantee) {
+function performGacha(user, isTenDayGuarantee, channelId) {
     // 레어팩 체크
     const isRarePack = Math.random() <= RARE_PACK_RATE;
     
     if (isRarePack) {
         // 레어팩 실행
-        const rarePackData = generateRarePackResult();
+        const rarePackData = generateRarePackResult(channelId);
         
         return { 
             results: rarePackData.results, 
@@ -143,7 +154,8 @@ function performGacha(user, isTenDayGuarantee) {
     
     // 처음 9개 뽑기
     for (let i = 0; i < 9; i++) {
-        const rarity = generateGachaResult(noFiveStarCount);
+        let rarity = generateGachaResult(noFiveStarCount);
+        rarity = adjustRarityForChannel(rarity, channelId);
         if (rarity >= 5) { // 5성 이상이면 카운트 리셋
             noFiveStarCount = 0;
             fiveStarHit = true;
@@ -171,6 +183,7 @@ function performGacha(user, isTenDayGuarantee) {
         finalRarity = generateGachaResult(noFiveStarCount);
     }
     
+    finalRarity = adjustRarityForChannel(finalRarity, channelId);
     if (finalRarity >= 5) { // 5성 이상이면 카운트 리셋
         noFiveStarCount = 0;
         fiveStarHit = true;

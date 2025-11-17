@@ -116,7 +116,7 @@ async function updateUserGachaInfo(userId) {
 }
 
 // 가챠 명령어 처리 메인 함수
-async function handleGachaCommand(userId) {
+async function handleGachaCommand(userId, channelId) {
     const updateResult = await updateUserGachaInfo(userId);
     if (updateResult && !updateResult.canGacha) {
         return updateResult.message;
@@ -137,7 +137,7 @@ async function handleGachaCommand(userId) {
     });
     const user = await getUser(userId);
     const isTenDayGuarantee = user && user.consecutiveDays % 10 === 0 && user.consecutiveDays > 0;
-    const gachaData = performGacha(user, isTenDayGuarantee);
+    const gachaData = performGacha(user, isTenDayGuarantee, channelId);
     // 5성 천장 카운트 갱신
     await updateUser(userId, u => { u.noFiveStarCount = gachaData.newNoFiveStarCount; });
     const userAfter = await getUser(userId);
