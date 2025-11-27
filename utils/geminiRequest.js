@@ -3,6 +3,7 @@ const axios = require('axios');
 const {getAccessToken} = require("./functions");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const SNACK_API_KEY = process.env.SNACK_API_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
 // HarmCategory와 HarmBlockThreshold 상수 정의
@@ -96,7 +97,7 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
 
         // Taiyaki AI 프록시에 POST 요청 보내기
         const result = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro:generateContent?key=${GEMINI_API_KEY}`,
+            `https://dendenai.xyz/v1/models/gemini-3.0-pro:generateContent?key=${SNACK_API_KEY}`,
             {
                 contents: chatHistory,
                 generationConfig: config,
