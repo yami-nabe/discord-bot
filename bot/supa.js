@@ -41,7 +41,7 @@ const ALLOWED_CHANNELS = [
 ];
 
 client.once(Events.ClientReady, () => {
-  console.log(`Supa Memory (GPT 5.1) Ready!`);
+  console.log(`Supa Memory (gemini-3-pro-preview) Ready!`);
 });
 
 // ───────────────────────────────────────────────
