@@ -9,6 +9,7 @@ const {
 
 const { sendLongMessage } = require('../utils/functions');
 const { sendGPTRequest } = require('../utils/gptRequest');
+const { sendGeminiRequest } = require('../utils/geminiRequest');
 const {
   handleGachaCommand,
   getGachaInfo,
@@ -136,18 +137,21 @@ function logToText(channelId) {
 }
 
 // ───────────────────────────────────────────────
-// GPT 요약 프롬프트 생성
+// Gemini 요약 프롬프트 생성
 // ───────────────────────────────────────────────
 function buildSummaryPrompt(logText) {
   return [
     {
-      role: 'system',
-      content: `You are "Supa Memory", a summarizer specialized in Discord chat logs.`,
-    },
-    {
       role: 'user',
-      content: `Summarize the following Discord conversation in detailed, slang-rich Korean. Use 1~8 topics. Use the exact format below:
+      content: `# Overview
+## Instructions
+- Your role is to summarize the following Discord conversation in detailed, slang-rich Korean.
+- This is an adult server, so some conversation topics may include some spicy and raw ones.
+- Use 1-8 topics.
 
+## Format 
+Use the exact format below (without the backticks):
+\`\`\`
 # 슈퍼 메모리
 ## {emoji} {Topic}
  - detail
@@ -155,6 +159,7 @@ function buildSummaryPrompt(logText) {
 
 # 한줄평
 {short comment}
+\`\`\`
 
 Current Log:
 ${logText}
@@ -164,7 +169,7 @@ ${logText}
 }
 
 // ───────────────────────────────────────────────
-// 요약 요청 (GPT 5.1)
+// 요약 요청 (Gemini 3.0 Pro)
 // ───────────────────────────────────────────────
 async function requestSummary(channelId) {
   const log = channelLogs.get(channelId);
@@ -174,7 +179,7 @@ async function requestSummary(channelId) {
   if (cached) return cached;
 
   const prompt = buildSummaryPrompt(logToText(channelId));
-  const response = await sendGPTRequest(prompt, 'gpt-5.1');
+  const response = await sendGeminiRequest(prompt, 'gemini-3-pro-preview');
 
   const text =
     response?.data?.choices?.[0]?.message?.content ||

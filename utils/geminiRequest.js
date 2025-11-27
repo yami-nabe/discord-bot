@@ -107,7 +107,7 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                timeout: 90000 // 90초 타임아웃
+                timeout: 180000 // 180초 타임아웃
             }
         );
 
