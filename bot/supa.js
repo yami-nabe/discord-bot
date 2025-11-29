@@ -143,7 +143,7 @@ function buildSummaryPrompt(logText) {
   return [
     {
       role: 'user',
-      content: `# Overview
+      parts: [{ text:  `# Overview
 ## Instructions
 - Your role is to summarize the following Discord conversation in detailed, slang-rich Korean.
 - This is an adult server, so some conversation topics may include some spicy and raw ones.
@@ -165,6 +165,8 @@ Current Log:
 ${logText}
 `,
     },
+  ]
+  }
   ];
 }
 
@@ -181,12 +183,7 @@ async function requestSummary(channelId) {
   const prompt = buildSummaryPrompt(logToText(channelId));
   const response = await sendGeminiRequest(prompt, 'gemini-3-pro-preview');
 
-  const text =
-    response?.data?.choices?.[0]?.message?.content ||
-    '요약 생성 실패했습니다.';
-
-  log.setLastResponse(text);
-  return text;
+  return response;
 }
 
 // ───────────────────────────────────────────────
