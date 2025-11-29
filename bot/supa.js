@@ -171,6 +171,10 @@ ${logText}
 // ───────────────────────────────────────────────
 // 요약 요청 (Gemini 3.0 Pro)
 // ───────────────────────────────────────────────
+function editSupaOutput(text) {
+  return text.replace(/`/g, '');
+}
+
 async function requestSummary(channelId) {
   const log = channelLogs.get(channelId);
   if (!log) return null;
@@ -182,7 +186,7 @@ async function requestSummary(channelId) {
   const response = await sendGeminiRequest(prompt);
   
   log.setLastResponse(response);
-  return response;
+  return editSupaOutput(response);
 }
 
 // ───────────────────────────────────────────────
