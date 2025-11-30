@@ -20,7 +20,7 @@ async function giveSpecialGachaToAllUsers() {
         return;
     }
     
-    console.log(`총 ${userFiles.length}명의 유저에게 스페셜 가챠권 15개를 지급합니다...`);
+    console.log(`총 ${userFiles.length}명의 유저에게 스페셜 가챠권 10개를 지급합니다...`);
     
     let successCount = 0;
     let errorCount = 0;
@@ -32,8 +32,8 @@ async function giveSpecialGachaToAllUsers() {
             // updateUser 함수를 사용하여 todaySpecialGachaCount에 10 추가
             await updateUser(userId, user => {
                 if (user.todaySpecialGachaCount === undefined) user.todaySpecialGachaCount = 0;
-                user.todaySpecialGachaCount += 15;
-                console.log(`유저 ${userId}: 스페셜 가챠권 15개 지급 완료 (총 ${user.todaySpecialGachaCount}개)`);
+                user.todaySpecialGachaCount += 10;
+                console.log(`유저 ${userId}: 스페셜 가챠권 10개 지급 완료 (총 ${user.todaySpecialGachaCount}개)`);
             });
             
             successCount++;
@@ -51,7 +51,7 @@ async function giveSpecialGachaToAllUsers() {
 
 // 스크립트 실행
 async function main() {
-    console.log('모든 유저에게 스페셜 가챠권 15개를 지급하는 스크립트를 시작합니다...');
+    console.log('모든 유저에게 스페셜 가챠권 10개를 지급하는 스크립트를 시작합니다...');
     
     try {
         await giveSpecialGachaToAllUsers();
