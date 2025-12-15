@@ -97,7 +97,7 @@ async function sendGeminiRequest(chatHistory, generationConfig = {}) {
 
         // Taiyaki AI 프록시에 POST 요청 보내기
         const result = await axios.post(
-            `https://dendenai.xyz/v1/models/gemini-3-pro-preview:generateContent?key=${SNACK_API_KEY}`,
+            `https://model-materials-intelligence-las.trycloudflare.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${SNACK_API_KEY}`,
             {
                 contents: chatHistory,
                 generationConfig: config,
