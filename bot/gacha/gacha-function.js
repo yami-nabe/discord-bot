@@ -153,6 +153,24 @@ async function handleGachaCommand(userId, channelId) {
         updateSixStarStats(userId, sixStarChars);
     }
     
+    // 레몬빛 가루 지급 (등급별 지급량: 3성=1, 4성=10, 5성=50, 6성=150)
+    const lemonDustRewards = {
+        3: 1,
+        4: 10,
+        5: 50,
+        6: 150
+    };
+    let totalLemonDust = 0;
+    gachaData.results.forEach(rarity => {
+        totalLemonDust += lemonDustRewards[rarity] || 0;
+    });
+    if (totalLemonDust > 0) {
+        await updateUser(userId, user => {
+            if (user.lemonDust === undefined) user.lemonDust = 0;
+            user.lemonDust += totalLemonDust;
+        });
+    }
+    
     const formattedResults = formatGachaResults(gachaData, userId, updateFiveStarStats);
     const detailed = formatGachaResultsDetailed(gachaData, userId, updateFiveStarStats);
     
@@ -270,6 +288,8 @@ async function getMyGachaInfo(userId) {
         result += `**📅 연속 출석:** ${user.consecutiveDays}일차\n`;
         const coupons = user.ceilingCoupons || 0;
         result += `**🎫 천장 쿠폰:** ${coupons}개 보유\n`;
+        const lemonDust = user.lemonDust || 0;
+        result += `**✨ 레몬빛 가루:** ${lemonDust}개\n`;
         result += `**🌀 오늘의 가챠 가능 횟수:** ${user.todayGachaCount || 0}회\n`;
         result += `**✨ 추가 가챠권(이벤트):** ${user.todaySpecialGachaCount || 0}회\n`;
         const fiveStarStats = user.fiveStarStats || {};

@@ -72,6 +72,7 @@ async function getUser(userId) {
     if (user && user.noFiveStarCount === undefined) user.noFiveStarCount = 0;
     if (user && user.todaySpecialGachaCount === undefined) user.todaySpecialGachaCount = 0;
     if (user.sixStarStats === undefined) user.sixStarStats = {}; // 6성 통계 초기화
+    if (user && user.lemonDust === undefined) user.lemonDust = 0; // 레몬빛 가루 초기화
     return user;
 }
 
@@ -92,13 +93,15 @@ async function updateUser(userId, updateFn) {
             ceilingCoupons: 0,
             todayGachaCount: 1,
             noFiveStarCount: 0,
-            todaySpecialGachaCount: 0
+            todaySpecialGachaCount: 0,
+            lemonDust: 0 // 레몬빛 가루 초기화
         };
     }
     if (user.todayGachaCount === undefined) user.todayGachaCount = 1;
     if (user.noFiveStarCount === undefined) user.noFiveStarCount = 0;
     if (user.todaySpecialGachaCount === undefined) user.todaySpecialGachaCount = 0;
     if (user.sixStarStats === undefined) user.sixStarStats = {}; // 6성 통계 초기화
+    if (user.lemonDust === undefined) user.lemonDust = 0; // 레몬빛 가루 초기화
     updateFn(user);
     fs.writeFileSync(filePath, JSON.stringify(user, null, 2), 'utf8');
     return user;
