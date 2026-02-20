@@ -62,7 +62,7 @@ Available custom emoji list: :lemon_yummy:,:lemon_you_silly:,:lemon_wwwww:,:lemo
     },
     {
       role: 'model',
-      parts: [{ text: `Alright, I'll start the conversation with you. Please tell me what you want to talk about.`
+      parts: [{ text: `Alright, I'll start the conversation with you. Please tell me what you want to talk about in Korean.`
       }],
     },
     {
