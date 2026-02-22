@@ -40,6 +40,8 @@ const ALLOWED_CHANNELS = [
   '1408784608820068443',
 ];
 
+const SUPA_LIMIT_TIME = 50 * 60 * 1000; // 50분
+
 client.once(Events.ClientReady, () => {
   console.log(`Supa Memory (gemini-3-pro-preview) Ready!`);
 });
@@ -75,7 +77,7 @@ class TimedLog {
     if (now - this.lastCleanup < 5 * 60 * 1000) return;
     this.lastCleanup = now;
 
-    const threshold = now - 30 * 60 * 1000;
+    const threshold = now - SUPA_LIMIT_TIME; // 50분
     while (this.log.length && this.log[0].timestamp < threshold) {
       this.log.shift();
     }
@@ -159,14 +161,19 @@ Use the exact format below (without the backticks):
 
 # 한줄평
 {short comment}
-\`\`\`
-
-Current Log:
+\`\`\``}]
+},
+{
+  role: 'model',
+  parts: [{ text: `Alright, let's start summarizing the conversation. Provide your log from now on. I'll answer in fluent Korean, in the structured format.` }]
+},
+{
+  role: 'user',
+  parts: [{ text: `Current Log:
 ${logText}
 ` }]
-    }
-  ];
-}
+  }]
+  };
 
 // ───────────────────────────────────────────────
 // 요약 요청 (Gemini 3.0 Pro)
