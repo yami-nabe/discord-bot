@@ -303,8 +303,10 @@ client.on('messageCreate', async (message) => {
     } catch (error) {
       console.error('API Error:', error);
       await message.reply(`에러 발생:
-${error.message}`);
-    }
+\`\`\`
+${error.message}
+\`\`\``);
+}
     return;
   }
 
