@@ -284,6 +284,7 @@ client.on('messageCreate', async (message) => {
   const log = channelLogs.get(message.channelId);
 
   if (/!logcheck/i.test(message.content)) {
+    if(message.author.id !== '309989582240219137') return;
     await sendLongMessage(message, log.logCheck());
     return;
   }
@@ -295,8 +296,15 @@ client.on('messageCreate', async (message) => {
   }
 
   if (/!supa/i.test(message.content) || /!슈메/u.test(message.content)) {
-    const text = await requestSummary(message.channelId);
-    await sendLongMessage(message, text);
+    try{
+      const text = await requestSummary(message.channelId);
+      await sendLongMessage(message, text);
+      return;
+    } catch (error) {
+      console.error('API Error:', error);
+      await message.reply(`에러 발생:
+${error.message}`);
+    }
     return;
   }
 
