@@ -221,7 +221,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
     } else {
       await interaction.reply({ content: String(result) });
     }
-    re   const userId = interaction.user.id;
+    return;
+  }
+
+  if (interaction.commandName === 'coupon') {
+    const userId = interaction.user.id;
     const user = await getUser(userId);
 
     if (!user || user.ceilingCoupons < 1) {
