@@ -40,6 +40,9 @@ const ALLOWED_CHANNELS = [
   '1408784608820068443',
 ];
 
+// 5성/6성 축하 메시지를 보낼 채널
+const GACHA_CELEBRATION_CHANNEL_ID = '1327739713427341343';
+
 const SUPA_LIMIT_TIME = 50 * 60 * 1000; // 50분
 
 client.once(Events.ClientReady, () => {
@@ -218,9 +221,42 @@ client.on(Events.InteractionCreate, async (interaction) => {
         iconURL: interaction.user.displayAvatarURL(),
       });
       await interaction.reply({ embeds: [result.embed] });
+      // 5성 또는 6성 뽑은 경우 축하 채널에 자랑 메시지 전송
+      if (result.meta?.celebrationChars?.length > 0) {
+        try {
+          const celebrationChannel = await interaction.client.channels.fetch(GACHA_CELEBRATION_CHANNEL_ID);
+          const charDisplay = result.meta.celebrationChars
+            .map((c) => `${c.emoji} **${c.name}** (${c.rarity}⭐)`)
+            .join(', ');
+          const message = `🎉 **${interaction.user.username}**님이 가챠에서 대박을 터뜨렸어요! ${charDisplay}`;
+          await celebrationChannel.send(message);
+        } catch (err) {
+          console.error('[가챠 축하] 채널 메시지 전송 실패:', err);
+        }
+      }
     } else {
       await interaction.reply({ content: String(result) });
     }
+    return;
+  }
+
+  if (interaction.commandName === 'gachainfo') {
+    await interaction.reply({ content: await getGachaInfo() });
+    return;
+  }
+
+  if (interaction.commandName === 'gachalist') {
+    await interaction.reply({ content: await getGachaList() });
+    return;
+  }
+
+  if (interaction.commandName === 'mygacha') {
+    await interaction.reply({ content: await getMyGachaInfo(interaction.user.id) });
+    return;
+  }
+
+  if (interaction.commandName === 'gachastats') {
+    await interaction.reply({ content: getGachaStatsCommand() });
     return;
   }
 

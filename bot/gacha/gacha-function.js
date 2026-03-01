@@ -174,6 +174,12 @@ async function handleGachaCommand(userId, channelId) {
     const formattedResults = formatGachaResults(gachaData, userId, updateFiveStarStats);
     const detailed = formatGachaResultsDetailed(gachaData, userId, updateFiveStarStats);
     
+    // 5성/6성 축하 채널용 캐릭터 목록 (이모지 + 이름 + 등급)
+    const celebrationChars = [
+        ...sixStarChars.map(c => ({ ...c, rarity: 6 })),
+        ...fiveStarChars.map(c => ({ ...c, rarity: 5 }))
+    ];
+    
     // 레어팩 메시지 추가
     let rarePackMessage = '';
     if (gachaData.isRarePack) {
@@ -190,7 +196,8 @@ async function handleGachaCommand(userId, channelId) {
             summaryMap: detailed.summaryMap,
             congratulationText: detailed.congratulationText,
             hasSixStar: sixStarChars.length > 0,
-            hasFiveStar: fiveStarChars.length > 0
+            hasFiveStar: fiveStarChars.length > 0,
+            celebrationChars
         },
         embed: createGachaEmbed({
             updateMessage: updateResult.message,
