@@ -221,31 +221,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     } else {
       await interaction.reply({ content: String(result) });
     }
-    return;
-  }
-
-  if (interaction.commandName === 'gachainfo') {
-    await interaction.reply({ content: await getGachaInfo() });
-    return;
-  }
-
-  if (interaction.commandName === 'gachalist') {
-    await interaction.reply({ content: await getGachaList() });
-    return;
-  }
-
-  if (interaction.commandName === 'mygacha') {
-    await interaction.reply({ content: await getMyGachaInfo(interaction.user.id) });
-    return;
-  }
-
-  if (interaction.commandName === 'gachastats') {
-    await interaction.reply({ content: getGachaStatsCommand() });
-    return;
-  }
-
-  if (interaction.commandName === 'coupon') {
-    const userId = interaction.user.id;
+    re   const userId = interaction.user.id;
     const user = await getUser(userId);
 
     if (!user || user.ceilingCoupons < 1) {
