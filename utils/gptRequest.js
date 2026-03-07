@@ -22,7 +22,6 @@ async function sendGPTRequest(prompt, model = 'gpt-5.4-2026-03-05') {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.BLACKMARKET_KEY}`,
-          'User-Agent': 'Discord-Bot/1.0'
         },
         timeout: 30000 // 30초 타임아웃
       }
