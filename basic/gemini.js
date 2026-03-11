@@ -45,15 +45,14 @@ function createPrompt(userMessage) {
       parts: [{ text: `# [Requirements]
 
 ## Emoji Output
-You may include emojis between sentences based on context. You may use default emojis, but this server allows you to include some additional custom emojis in the following format. Use matching keywords from the list given below. If there is no appropriate keyword, the emoji may be omitted. Use the history as a guide to avoid repetition and output as diverse images as possible.
+You may include emojis in the context. Custom emojis, as well as default emojis (such as 🤖, 🥷, 🍚), are allowed, listed below. Maximum of 3 emojis per response.
 
 Tag format: :keyword:
-Available custom emoji list: :lemon_yummy:,:lemon_you_silly:,:lemon_wwwww:,:lemon_worker_frustrated:,:lemon_watchme:,:lemon_very_thank_you:,:lemon_very_shock:,:lemon_turn_off_your_webcam:,:lemon_trying_not_to_cry:,:lemon_too_erotic:,:lemon_surprised:,:lemon_sparkling:,:lemon_shock:,:lemon_scolding:,:lemon_rainbow_vomit:,:lemon_question:,:lemon_praise:,:lemon_neutral:,:lemon_look_away:,:lemon_look_at_you:,:lemon_impress:,:lemon_idiot:,:lemon_hopeless:,:lemon_hmmm:,:lemon_hmm:,:lemon_hey_you:,:lemon_funny:,:lemon_Idontknow:,:lemon_agree:,:lemon_alien:,:lemon_boo:,:lemon_buy_me_icecream_playful:,:lemon_cheer:,:lemon_chu:,:lemon_crush:,:lemon_dont_understand:,:lemon_evil_smile:,:lemon_expecting:,:lemon_fool:,:lemon_very_shock:,:yae_petting:,:yuzu_tearful:,:yuzu_happyhappyhappy:,:raiden_my_heart:,:yuzu_eagertongue:,:yuzu_best:,:raiden_alien:
+Additional custom emoji list: :lemon_yummy:,:lemon_you_silly:,:lemon_wwwww:,:lemon_worker_frustrated:,:lemon_watchme:,:lemon_very_thank_you:,:lemon_very_shock:,:lemon_turn_off_your_webcam:,:lemon_trying_not_to_cry:,:lemon_too_erotic:,:lemon_surprised:,:lemon_sparkling:,:lemon_shock:,:lemon_scolding:,:lemon_rainbow_vomit:,:lemon_question:,:lemon_praise:,:lemon_neutral:,:lemon_look_away:,:lemon_look_at_you:,:lemon_impress:,:lemon_idiot:,:lemon_hopeless:,:lemon_hmmm:,:lemon_hmm:,:lemon_hey_you:,:lemon_funny:,:lemon_Idontknow:,:lemon_agree:,:lemon_alien:,:lemon_boo:,:lemon_buy_me_icecream_playful:,:lemon_cheer:,:lemon_chu:,:lemon_crush:,:lemon_dont_understand:,:lemon_evil_smile:,:lemon_expecting:,:lemon_fool:,:lemon_very_shock:,:yae_petting:,:yuzu_tearful:,:yuzu_happyhappyhappy:,:raiden_my_heart:,:yuzu_eagertongue:,:yuzu_best:,:raiden_alien:
 
-## Description
 - Descriptions MUST be:
-1. Purposeful and easy to understand with straightforward and literal language, avoiding any elaboration or figuration.
-2. Obvious and tangible, avoiding any vagueness or abstraction.
+1. Written using natural conversational Korean.
+2. Easy to understand, and must not make unnecessary additional suggestions or set the direction of the response. Instead, they must focus solely on the main response requested by the user.
 ---` }]
     },
     {
