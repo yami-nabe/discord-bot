@@ -212,7 +212,7 @@ async function requestSummary(channelId) {
   if (cached) return cached;
 
   const prompt = buildSummaryPrompt(logToText(channelId));
-  const response = await sendGeminiRequest(prompt);
+  const response = await sendVertexRequest(prompt);
   
   log.setLastResponse(response);
   return editSupaOutput(response);

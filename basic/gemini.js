@@ -97,7 +97,19 @@ client.on('messageReactionAdd', async (reaction, user) => {
     try {
       let replyText;
       let success = false;
-      
+
+
+      // 임시로 Vertex만 시도도
+      try {
+        replyText = await sendVertexRequest(createPrompt(userMessage));
+        success = true;
+      } catch (vertexError) {
+        console.error('Vertex API Error:', vertexError);
+      }
+
+
+      // gemini 시도 부분분
+      /*
       try {
         // 먼저 Gemini로 시도
         replyText = await sendGeminiRequest(createPrompt(userMessage));
@@ -112,7 +124,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
         } catch (vertexError) {
           console.error('Vertex API Error:', vertexError);
         }
-      }
+      }*/
 
       if (success && replyText) {
         await sendLongMessage(origMessage, editOutput(replyText));
@@ -190,8 +202,8 @@ client.on('messageCreate', async message => {
     let success = false;
     
     try {
-      // 먼저 Gemini로 시도
-      replyText = await sendGeminiRequest(createPrompt(userMessage));
+      // Vertex로 시도
+      replyText = await sendVertexRequest(createPrompt(userMessage));
       success = true;
     } catch (geminiError) {
       console.error('Gemini API Error:', geminiError);
