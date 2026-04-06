@@ -9,7 +9,7 @@ const {
 
 const { sendLongMessage } = require('../utils/functions');
 const { sendGPTRequest } = require('../utils/gptRequest');
-const { sendGeminiRequest } = require('../utils/geminiRequest');
+const { sendGeminiRequest , sendVertexRequest} = require('../utils/geminiRequest');
 const {
   handleGachaCommand,
   getGachaInfo,
