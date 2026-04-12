@@ -258,8 +258,6 @@ function buildReplyPrompt(logText, userRequest) {
   - 잼플: Gemini Flash
   - 잼프로: Gemini Pro
 - 챗챈: AI 채팅 채널 (아카라이브)
-- 유즈: 채널의 마스코트같은 고양이 메이드로, 고아라고 자주 놀림받는다
-- 굴: 버추얼 유튜버 그룹 이세계 아이돌의 빨간약이 우연히 드러난 사건을 의미하는 것으로 이제는 버튜버의 일반명사처럼 이용된다.
 - 코파: Github Copilot` }],
     },
     {
