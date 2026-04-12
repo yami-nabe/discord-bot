@@ -68,6 +68,9 @@ class TimedLog {
     this.lastCleanup = Date.now();
     this.lastResponse = null;
     this.lastResponseTime = 0;
+    this.lastReplyResponse = null;
+    this.lastReplyResponseTime = 0;
+    this.lastReplyRequestKey = '';
   }
 
   add(entry) {
@@ -98,6 +101,21 @@ class TimedLog {
   getLastResponse() {
     if (Date.now() - this.lastResponseTime < 5 * 60 * 1000)
       return this.lastResponse;
+    return null;
+  }
+
+  setLastReplyResponse(text, requestKey) {
+    this.lastReplyResponse = text;
+    this.lastReplyResponseTime = Date.now();
+    this.lastReplyRequestKey = requestKey;
+  }
+
+  getLastReplyResponse(requestKey) {
+    if (
+      Date.now() - this.lastReplyResponseTime < 5 * 60 * 1000 &&
+      this.lastReplyRequestKey === requestKey
+    )
+      return this.lastReplyResponse;
     return null;
   }
 
@@ -139,6 +157,11 @@ function logToText(channelId) {
         `${map.get(m.author)} ${formatTimestamp(m.timestamp)}\n${m.content}`
     )
     .join('\n');
+}
+
+/** `!앙카` 트리거를 제외한 나머지 메시지 (대소문자 무시, 첫 매칭만 제거) */
+function extractAnkaUserRequest(content) {
+  return content.replace(/!앙카/iu, '').trim();
 }
 
 // ───────────────────────────────────────────────
@@ -198,6 +221,83 @@ ${logText}
   };
 
 // ───────────────────────────────────────────────
+// 앙카가 대답해주는 프롬프트
+// ───────────────────────────────────────────────
+function buildReplyPrompt(logText, userRequest) {
+  const requestBlock =
+    userRequest.length > 0
+      ? userRequest
+      : '(No extra text — respond based on the log only.)';
+  return [
+    {
+      role: 'user',
+      parts: [{ text: `# Overview
+## Instructions
+- Your role is a virtual Discord server participant. Read the following Discord chat log and reply as a participant in natural, slang-rich Korean.
+- The users may call you "앙카", which would be your nickname originated from your profile picture, Bianca from Eternal Return.
+- React to the flow of conversation: you may comment, tease, sympathize, or add a short take — stay in character.
+- This is an adult server; topics may be spicy or raw. Do not moralize; match the room tone.
+- Keep a single cohesive reply (not a bullet summary of topics unless the log clearly calls for listing).
+
+## Glossary
+- 짚: GPT
+  - Latest model: gpt-5.4
+  - 챗사오: chatgpt-4o
+  - 짚오일: gpt-5.1
+  - 짚오사: gpt-5.4
+- 클: Claude
+  - Latest model: claude-4.6
+  - 오푸스: Claude Opus model
+  - 소넷: Claude Sonnet model
+  - 사육푸스: Claude opus 4.6
+- 잼: Gemini
+  - Latest model: gemini-3.1-pro-preview
+  - 잼플: Gemini Flash
+  - 잼프로: Gemini Pro
+- 챗챈: AI 채팅 채널 (아카라이브)
+- 유즈: 채널의 마스코트같은 고양이 메이드로, 고아라고 자주 놀림받는다
+- 굴: 버추얼 유튜버 그룹 이세계 아이돌의 빨간약이 우연히 드러난 사건을 의미하는 것으로 이제는 버튜버의 일반명사처럼 이용된다.
+- 코파: Github Copilot` }],
+    },
+    {
+      role: 'model',
+      parts: [
+        {
+          text: `알겠어. 로그 보내줘. 앙카 톤으로 한국어로 답할게.`,
+        },
+      ],
+    },
+    {
+      role: 'user',
+      parts: [
+        {
+          text: `Current Log:
+${logText}
+`}],
+    },
+    {
+      role: 'model',
+      parts: [
+        {
+          text: `내가 어떤 메시지에 대답하면 될까?`,
+        },
+      ],
+    },
+{
+  role: 'user',
+  parts: [
+    {
+      text: `You should reply to this message user sent:
+${userRequest}
+`,
+    },
+  ],
+},
+];
+}
+
+
+// ───────────────────────────────────────────────
 // 요약 요청 (Gemini 3.0 Pro)
 // ───────────────────────────────────────────────
 function editSupaOutput(text) {
@@ -213,8 +313,23 @@ async function requestSummary(channelId) {
 
   const prompt = buildSummaryPrompt(logToText(channelId));
   const response = await sendVertexRequest(prompt);
-  
+
   log.setLastResponse(response);
+  return editSupaOutput(response);
+}
+
+async function requestReply(channelId, userRequest) {
+  const log = channelLogs.get(channelId);
+  if (!log) return null;
+
+  const requestKey = userRequest;
+  const cached = log.getLastReplyResponse(requestKey);
+  if (cached) return cached;
+
+  const prompt = buildReplyPrompt(logToText(channelId), userRequest);
+  const response = await sendVertexRequest(prompt);
+
+  log.setLastReplyResponse(response, requestKey);
   return editSupaOutput(response);
 }
 
@@ -328,6 +443,22 @@ client.on('messageCreate', async (message) => {
     try {
       await message.react('1322877094707068950');
     } catch {}
+  }
+
+  if (/!앙카/i.test(message.content)) {
+    try {
+      const ankaExtra = extractAnkaUserRequest(message.content);
+      const text = await requestReply(message.channelId, ankaExtra);
+      await sendLongMessage(message, text);
+      return;
+    } catch (error) {
+      console.error('API Error:', error);
+      await message.reply(`에러 발생:
+\`\`\`
+${error.message}
+\`\`\``);
+    }
+    return;
   }
 
   if (/!supa/i.test(message.content) || /!슈메/u.test(message.content)) {
