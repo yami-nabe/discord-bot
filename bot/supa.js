@@ -43,9 +43,6 @@ const ALLOWED_CHANNELS = [
 // 5성/6성 축하 메시지를 보낼 채널
 const GACHA_CELEBRATION_CHANNEL_ID = '1327739713427341343';
 
-// !앙카 성공 시 메시지에 다는 반응 (<:bianca_ao:…>)
-const ANKA_SUCCESS_REACTION_EMOJI_ID = '1266763884182638652';
-
 const SUPA_LIMIT_TIME = 50 * 60 * 1000; // 50분
 
 client.once(Events.ClientReady, () => {
@@ -456,9 +453,6 @@ client.on('messageCreate', async (message) => {
       const ankaExtra = extractAnkaUserRequest(message.content);
       const text = await requestReply(message.channelId, ankaExtra);
       await sendLongMessage(message, text);
-      try {
-        await message.react(ANKA_SUCCESS_REACTION_EMOJI_ID);
-      } catch {}
       return;
     } catch (error) {
       console.error('API Error:', error);
