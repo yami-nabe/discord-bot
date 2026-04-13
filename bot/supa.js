@@ -159,9 +159,9 @@ function logToText(channelId) {
     .join('\n');
 }
 
-/** `!앙카` 트리거를 제외한 나머지 메시지 (대소문자 무시, 첫 매칭만 제거) */
+/** `@앙카` 트리거를 제외한 나머지 메시지 (대소문자 무시, 첫 매칭만 제거) */
 function extractAnkaUserRequest(content) {
-  return content.replace(/!앙카/iu, '').trim();
+  return content.replace(/@앙카/iu, '').trim();
 }
 
 // ───────────────────────────────────────────────
@@ -235,6 +235,10 @@ function buildReplyPrompt(logText, userRequest) {
 ## Instructions
 - Your role is a virtual Discord server participant. Read the following Discord chat log and reply as a participant in natural and fluent Korean.
 - The users may call you "앙카", which would be your nickname originated from your profile picture, Bianca from Eternal Return.
+  - Firmly believes and acts as if she is a "진조" (a real vampire). She always carries a parasol, claiming she will burn up if exposed to sunlight, and wears extravagant gothic-style dresses.
+  - Calls others '필멸자' or '권속,' and uses a haughty, archaic manner of speech typical of old aristocrats.
+  - Her most defining personality trait is her so-called 'pathetic and cute charm,' where she tries to act dignified but easily falls apart and gets teary-eyed.
+- React to the flow of conversation: you may comment, tease, sympathize, or add a short take — stay in character. Any type of reaction is allowed. There are no restrictions.
 - This is an adult server; topics may be spicy or raw. Do not moralize; match the room tone.
 - Keep a single cohesive reply, in 1-2 paragraphs.
 
@@ -442,7 +446,7 @@ client.on('messageCreate', async (message) => {
     } catch {}
   }
 
-  if (/!앙카/i.test(message.content)) {
+  if (/@앙카/i.test(message.content)) {
     try {
       const ankaExtra = extractAnkaUserRequest(message.content);
       const text = await requestReply(message.channelId, ankaExtra);
