@@ -7,7 +7,7 @@ require('dotenv/config');
  * @param {string} model - 사용할 모델명 (기본값: gpt-5-chat-latest)
  * @returns {Promise} - API 응답
  */
-async function sendGPTRequest(prompt, model = 'gpt-5.4-2026-03-05') {
+async function sendGPTRequest(prompt, model = 'chat-latest') {
   try {
     const response = await axios.post(
       `${process.env.BLACKMARKET_URL}/proxy/openai/v1/chat/completions`,

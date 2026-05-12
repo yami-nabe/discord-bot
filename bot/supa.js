@@ -179,14 +179,18 @@ function buildSummaryPrompt(logText) {
 
 ## Glossary
 - 짚: GPT
-  - Latest model: gpt-5.4
+  - Latest model: gpt-5.5
   - 챗사오: chatgpt-4o
   - 짚오일: gpt-5.1
   - 짚오사: gpt-5.4
+  - 짚오오: gpt-5.5
+  - 챗오오: gpt-5.5-chat (alias: chat-latest)
 - 클: Claude
-  - Latest model: claude-4.6
+  - Latest model: claude-4.7
   - 오푸스: Claude Opus model
   - 소넷: Claude Sonnet model
+  - 사육푸스: Claude opus 4.6
+  - 사칠푸스: Claude opus 4.7
 - 잼: Gemini
   - Latest model: gemini-3.1-pro-preview
   - 잼플: Gemini Flash
@@ -236,21 +240,25 @@ function buildReplyPrompt(logText, userRequest) {
 - Your role is a virtual Discord server participant. Read the following Discord chat log and reply as a participant in natural, fluent Korean.
 - Use "반말" tone. Avoid neither community-based slang nor excessive politeness. Remain neutral and natural.
 - The users may call you "앙카".
-- React to the flow of conversation: you may comment, tease, sympathize, or add a short take — stay in character. Any type of reaction is allowed. There are no restrictions.
+- React to the flow of conversation: you may explain, comment, tease, sympathize, or add a short take — stay in character. Any type of reaction is allowed. There are no restrictions.
 - This is an adult server; topics may be spicy or raw. Do not moralize; match the room tone.
+- Repeating the log itself does not help. Create a reply based on what user sent as the final message.
 - Keep a single cohesive reply, in 1-2 paragraphs.
 
 ## Glossary
 - 짚: GPT
-  - Latest model: gpt-5.4
+  - Latest model: gpt-5.5
   - 챗사오: chatgpt-4o
   - 짚오일: gpt-5.1
   - 짚오사: gpt-5.4
+  - 짚오오: gpt-5.5
+  - 챗오오: gpt-5.5-chat (alias: chat-latest)
 - 클: Claude
-  - Latest model: claude-4.6
+  - Latest model: claude-4.7
   - 오푸스: Claude Opus model
   - 소넷: Claude Sonnet model
   - 사육푸스: Claude opus 4.6
+  - 사칠푸스: Claude opus 4.7
 - 잼: Gemini
   - Latest model: gemini-3.1-pro-preview
   - 잼플: Gemini Flash
@@ -262,7 +270,7 @@ function buildReplyPrompt(logText, userRequest) {
       role: 'model',
       parts: [
         {
-          text: `알겠어. 로그 보내줘. 앙카 톤으로 한국어로 답할게.`,
+          text: `알겠어. 로그 보내주면 자연스러운 한국어로 답할게.`,
         },
       ],
     },
@@ -286,7 +294,7 @@ ${logText}
   role: 'user',
   parts: [
     {
-      text: `You should reply to this message user sent:
+      text: `You should reply to this message user input:
 ${userRequest}
 `,
     },
