@@ -6,6 +6,7 @@ const { getGachaStats } = require('./gacha-stats');
 const path = require('path');
 const fs = require('fs');
 const { getEventSpecialGachaCount } = require('./event');
+const BONUS_GACHA_TICKET_RATE = 0.15;
 
 // const ADMIN_USER_ID = '309989582240219137';
 
@@ -138,6 +139,18 @@ async function handleGachaCommand(userId, channelId) {
     const user = await getUser(userId);
     const isTenDayGuarantee = user && user.consecutiveDays % 10 === 0 && user.consecutiveDays > 0;
     const gachaData = performGacha(user, isTenDayGuarantee, channelId);
+
+    // 15% 확률로 추가 가챠권 1회 지급
+    let bonusTicketMessage = '';
+    let bonusTicketGranted = false;
+    if (Math.random() <= BONUS_GACHA_TICKET_RATE) {
+        await updateUser(userId, currentUser => {
+            if (currentUser.todaySpecialGachaCount === undefined) currentUser.todaySpecialGachaCount = 0;
+            currentUser.todaySpecialGachaCount += 1;
+        });
+        bonusTicketGranted = true;
+        bonusTicketMessage = '\n\n🎉 **보너스 발동!** 추가 가챠권 1회를 획득했습니다!';
+    }
     // 5성 천장 카운트 갱신
     await updateUser(userId, u => { u.noFiveStarCount = gachaData.newNoFiveStarCount; });
     const userAfter = await getUser(userId);
@@ -187,7 +200,7 @@ async function handleGachaCommand(userId, channelId) {
     }
     
     return {
-        plainText: `${updateResult.message}\n\n**<a:lemon_click:1122183344818495608> 오늘의 가챠 결과: <a:lemon_click:1122183344818495608>**${rarePackMessage}\n${formattedResults}`,
+        plainText: `${updateResult.message}\n\n**<a:lemon_click:1122183344818495608> 오늘의 가챠 결과: <a:lemon_click:1122183344818495608>**${rarePackMessage}${bonusTicketMessage}\n${formattedResults}`,
         meta: {
             updateMessage: updateResult.message,
             isRarePack: gachaData.isRarePack,
@@ -197,7 +210,9 @@ async function handleGachaCommand(userId, channelId) {
             congratulationText: detailed.congratulationText,
             hasSixStar: sixStarChars.length > 0,
             hasFiveStar: fiveStarChars.length > 0,
-            celebrationChars
+            celebrationChars,
+            bonusTicketGranted,
+            bonusTicketMessage: bonusTicketGranted ? '🎉 보너스 발동! 추가 가챠권 1회 지급!' : null
         },
         embed: createGachaEmbed({
             updateMessage: updateResult.message,
@@ -392,4 +407,3 @@ module.exports = {
     useCeilingCoupon,
     getGachaStatsCommand
 };
-
