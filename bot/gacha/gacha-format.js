@@ -118,7 +118,7 @@ function formatGachaResultsDetailed(gachaData, userId, updateFiveStarStats) {
 // Discord Embed 생성 함수
 function createGachaEmbed(gachaMeta, username, avatarURL) {
 	const { EmbedBuilder } = require('discord.js');
-	const { updateMessage, isRarePack, emojiLines, summaryMap, congratulationText, hasSixStar, hasFiveStar } = gachaMeta;
+	const { updateMessage, isRarePack, emojiLines, summaryMap, congratulationText, bonusTicketMessage, hasSixStar, hasFiveStar } = gachaMeta;
 
 	// 색상 및 타이틀 이모지 선정
 	let color = 0x5865f2; // 기본 디스코드 블루
@@ -178,6 +178,10 @@ function createGachaEmbed(gachaMeta, username, avatarURL) {
 	} else if (congratulationText) {
 		fields.push({ name: '특별 획득', value: congratulationText, inline: false });
 		// 여유 공간 추가
+		fields.push({ name: '\u200B', value: '\u200B', inline: false });
+	}
+	if (bonusTicketMessage) {
+		fields.push({ name: '보너스', value: bonusTicketMessage, inline: false });
 		fields.push({ name: '\u200B', value: '\u200B', inline: false });
 	}
 

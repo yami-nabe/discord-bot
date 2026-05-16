@@ -375,6 +375,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
           console.error('[가챠 축하] 채널 메시지 전송 실패:', err);
         }
       }
+      if (result.meta?.bonusTicketGranted) {
+        try {
+          await interaction.followUp({
+            content: `🎉 **${interaction.user.username}**님이 보너스를 터뜨렸어요! 추가 가챠권 1회 지급!`,
+          });
+        } catch (err) {
+          console.error('[가챠 보너스] 채널 메시지 전송 실패:', err);
+        }
+      }
     } else {
       await interaction.reply({ content: String(result) });
     }
