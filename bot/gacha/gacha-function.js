@@ -221,6 +221,7 @@ async function handleGachaCommand(userId, channelId) {
             emojiLines: detailed.emojiLines,
             summaryMap: detailed.summaryMap,
             congratulationText: detailed.congratulationText,
+            bonusTicketMessage: bonusTicketGranted ? '🎉 보너스 발동! 추가 가챠권 1회 지급!' : null,
             hasSixStar: sixStarChars.length > 0,
             hasFiveStar: fiveStarChars.length > 0
         }, null, null) // username과 avatarURL은 supa.js에서 설정
