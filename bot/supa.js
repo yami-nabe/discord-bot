@@ -356,6 +356,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (interaction.commandName === 'gacha') {
     const result = await handleGachaCommand(interaction.user.id, interaction.channelId);
+    if (result && result.meta?.isNoTicket) {
+      await interaction.reply({
+        content: result.plainText,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
     if (result.embed) {
       result.embed.setAuthor({
         name: interaction.user.username,

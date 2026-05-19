@@ -71,6 +71,8 @@ async function getUser(userId) {
     if (user && user.todayGachaCount === undefined) user.todayGachaCount = 1;
     if (user && user.noFiveStarCount === undefined) user.noFiveStarCount = 0;
     if (user && user.todaySpecialGachaCount === undefined) user.todaySpecialGachaCount = 0;
+    if (user && user.todayGuaranteedFiveStarCount === undefined) user.todayGuaranteedFiveStarCount = 0;
+    if (user && user.todayGuaranteedSixStarCount === undefined) user.todayGuaranteedSixStarCount = 0;
     if (user.sixStarStats === undefined) user.sixStarStats = {}; // 6성 통계 초기화
     if (user && user.lemonDust === undefined) user.lemonDust = 0; // 레몬빛 가루 초기화
     return user;
@@ -94,12 +96,16 @@ async function updateUser(userId, updateFn) {
             todayGachaCount: 1,
             noFiveStarCount: 0,
             todaySpecialGachaCount: 0,
+            todayGuaranteedFiveStarCount: 0,
+            todayGuaranteedSixStarCount: 0,
             lemonDust: 0 // 레몬빛 가루 초기화
         };
     }
     if (user.todayGachaCount === undefined) user.todayGachaCount = 1;
     if (user.noFiveStarCount === undefined) user.noFiveStarCount = 0;
     if (user.todaySpecialGachaCount === undefined) user.todaySpecialGachaCount = 0;
+    if (user.todayGuaranteedFiveStarCount === undefined) user.todayGuaranteedFiveStarCount = 0;
+    if (user.todayGuaranteedSixStarCount === undefined) user.todayGuaranteedSixStarCount = 0;
     if (user.sixStarStats === undefined) user.sixStarStats = {}; // 6성 통계 초기화
     if (user.lemonDust === undefined) user.lemonDust = 0; // 레몬빛 가루 초기화
     updateFn(user);

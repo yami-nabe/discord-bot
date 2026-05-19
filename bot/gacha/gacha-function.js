@@ -95,7 +95,12 @@ async function updateUserGachaInfo(userId) {
         user = await getUser(userId); // 최신 정보로 갱신
     }
     // 가챠권이 모두 소진된 경우에만 가챠 불가
-    if ((user.todayGachaCount <= 0) && (user.todaySpecialGachaCount <= 0)) {
+    if (
+        (user.todayGachaCount <= 0) &&
+        (user.todaySpecialGachaCount <= 0) &&
+        ((user.todayGuaranteedFiveStarCount || 0) <= 0) &&
+        ((user.todayGuaranteedSixStarCount || 0) <= 0)
+    ) {
         return {
             canGacha: false,
             message: '오늘의 가챠 기회를 모두 소진했습니다! 내일 다시 시도해주세요.'
@@ -120,25 +125,44 @@ async function updateUserGachaInfo(userId) {
 async function handleGachaCommand(userId, channelId) {
     const updateResult = await updateUserGachaInfo(userId);
     if (updateResult && !updateResult.canGacha) {
-        return updateResult.message;
+        return {
+            plainText: updateResult.message,
+            meta: {
+                isNoTicket: true
+            }
+        };
     }
     // 가챠 전 noFiveStarCount
     const userBefore = await getUser(userId);
     const beforeNoFive = userBefore.noFiveStarCount;
+    let usedTicketType = 'normal';
     await updateUser(userId, user => {
         // if (userId !== ADMIN_USER_ID) {
-            // todaySpecialGachaCount가 1 이상이면 우선 차감, 아니면 todayGachaCount 차감
+            // 확정 6성 > 확정 5성 > 스페셜 > 일반 순서로 우선 차감
+            if (user.todayGuaranteedSixStarCount === undefined) user.todayGuaranteedSixStarCount = 0;
+            if (user.todayGuaranteedFiveStarCount === undefined) user.todayGuaranteedFiveStarCount = 0;
             if (user.todaySpecialGachaCount === undefined) user.todaySpecialGachaCount = 0;
-            if (user.todaySpecialGachaCount > 0) {
+            if (user.todayGuaranteedSixStarCount > 0) {
+                user.todayGuaranteedSixStarCount = Math.max(0, user.todayGuaranteedSixStarCount - 1);
+                usedTicketType = 'guaranteed6';
+            } else if (user.todayGuaranteedFiveStarCount > 0) {
+                user.todayGuaranteedFiveStarCount = Math.max(0, user.todayGuaranteedFiveStarCount - 1);
+                usedTicketType = 'guaranteed5';
+            } else if (user.todaySpecialGachaCount > 0) {
                 user.todaySpecialGachaCount = Math.max(0, user.todaySpecialGachaCount - 1);
+                usedTicketType = 'special';
             } else {
                 user.todayGachaCount = Math.max(0, (user.todayGachaCount || 1) - 1);
+                usedTicketType = 'normal';
             }
         // }
     });
     const user = await getUser(userId);
     const isTenDayGuarantee = user && user.consecutiveDays % 10 === 0 && user.consecutiveDays > 0;
-    const gachaData = performGacha(user, isTenDayGuarantee, channelId);
+    let guaranteedFinalRarity = null;
+    if (usedTicketType === 'guaranteed6') guaranteedFinalRarity = 6;
+    if (usedTicketType === 'guaranteed5') guaranteedFinalRarity = 5;
+    const gachaData = performGacha(user, isTenDayGuarantee, channelId, guaranteedFinalRarity);
 
     // 15% 확률로 추가 가챠권 1회 지급
     let bonusTicketMessage = '';
@@ -198,6 +222,12 @@ async function handleGachaCommand(userId, channelId) {
     if (gachaData.isRarePack) {
         rarePackMessage = '\n\n🎁 **🎉 레어팩 발동! 🎉** 🎁\n모든 캐릭터가 5성 이상으로 등장했습니다!';
     }
+    let guaranteedTicketMessage = '';
+    if (usedTicketType === 'guaranteed6') {
+        guaranteedTicketMessage = '\n\n🌈 **확정 6성 가챠권 사용!** 마지막 10번째 뽑기에서 6성이 확정 등장했습니다!';
+    } else if (usedTicketType === 'guaranteed5') {
+        guaranteedTicketMessage = '\n\n⭐ **확정 5성 가챠권 사용!** 마지막 10번째 뽑기에서 5성이 확정 등장했습니다!';
+    }
     
     return {
         plainText: `${updateResult.message}\n\n**<a:lemon_click:1122183344818495608> 오늘의 가챠 결과: <a:lemon_click:1122183344818495608>**${rarePackMessage}${bonusTicketMessage}\n${formattedResults}`,
@@ -221,6 +251,9 @@ async function handleGachaCommand(userId, channelId) {
             emojiLines: detailed.emojiLines,
             summaryMap: detailed.summaryMap,
             congratulationText: detailed.congratulationText,
+            bonusTicketMessage: bonusTicketGranted ? '🎉 보너스 발동! 추가 가챠권 1회 지급!' : null,
+            guaranteedTicketMessage: guaranteedTicketMessage || null,
+            usedTicketType,
             hasSixStar: sixStarChars.length > 0,
             hasFiveStar: fiveStarChars.length > 0
         }, null, null) // username과 avatarURL은 supa.js에서 설정
@@ -314,6 +347,8 @@ async function getMyGachaInfo(userId) {
         result += `**✨ 레몬빛 가루:** ${lemonDust}개\n`;
         result += `**🌀 오늘의 가챠 가능 횟수:** ${user.todayGachaCount || 0}회\n`;
         result += `**✨ 추가 가챠권(이벤트):** ${user.todaySpecialGachaCount || 0}회\n`;
+        result += `**⭐ 확정 5성 가챠권:** ${user.todayGuaranteedFiveStarCount || 0}회\n`;
+        result += `**🌈 확정 6성 가챠권:** ${user.todayGuaranteedSixStarCount || 0}회\n`;
         const fiveStarStats = user.fiveStarStats || {};
         const sixStarStats = user.sixStarStats || {};
         const totalFiveStar = Object.values(fiveStarStats).reduce((sum, count) => sum + count, 0);
