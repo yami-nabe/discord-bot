@@ -130,7 +130,7 @@ function generateRarePackResult(channelId) {
 // user: 유저 객체, isTenDayGuarantee: 10일 보장 여부
 // channelId: 가챠가 실행된 채널 ID
 // 반환값: { results, characters, newNoFiveStarCount, isRarePack }
-function performGacha(user, isTenDayGuarantee, channelId) {
+function performGacha(user, isTenDayGuarantee, channelId, guaranteedFinalRarity = null) {
     // 레어팩 체크
     const isRarePack = Math.random() <= RARE_PACK_RATE;
     
@@ -172,7 +172,9 @@ function performGacha(user, isTenDayGuarantee, channelId) {
     
     // 마지막 10번째 뽑기
     let finalRarity;
-    if (allThreeStar) {
+    if (guaranteedFinalRarity === 6 || guaranteedFinalRarity === 5) {
+        finalRarity = guaranteedFinalRarity;
+    } else if (allThreeStar) {
         const random = Math.random();
         if (random <= 0.006) {
             finalRarity = 5;
