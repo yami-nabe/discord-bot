@@ -230,7 +230,7 @@ async function handleGachaCommand(userId, channelId) {
     }
     
     return {
-        plainText: `${updateResult.message}\n\n**<a:lemon_click:1122183344818495608> 오늘의 가챠 결과: <a:lemon_click:1122183344818495608>**${rarePackMessage}${guaranteedTicketMessage}${bonusTicketMessage}\n${formattedResults}`,
+        plainText: `${updateResult.message}\n\n**<a:lemon_click:1122183344818495608> 오늘의 가챠 결과: <a:lemon_click:1122183344818495608>**${rarePackMessage}${bonusTicketMessage}\n${formattedResults}`,
         meta: {
             updateMessage: updateResult.message,
             isRarePack: gachaData.isRarePack,
