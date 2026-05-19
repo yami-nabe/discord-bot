@@ -118,7 +118,7 @@ function formatGachaResultsDetailed(gachaData, userId, updateFiveStarStats) {
 // Discord Embed 생성 함수
 function createGachaEmbed(gachaMeta, username, avatarURL) {
 	const { EmbedBuilder } = require('discord.js');
-	const { updateMessage, isRarePack, emojiLines, summaryMap, congratulationText, hasSixStar, hasFiveStar } = gachaMeta;
+	const { updateMessage, isRarePack, emojiLines, summaryMap, congratulationText, bonusTicketMessage, guaranteedTicketMessage, usedTicketType, hasSixStar, hasFiveStar } = gachaMeta;
 
 	// 색상 및 타이틀 이모지 선정
 	let color = 0x5865f2; // 기본 디스코드 블루
@@ -127,7 +127,8 @@ function createGachaEmbed(gachaMeta, username, avatarURL) {
 	else if (hasFiveStar) color = 0x9b59b6; // 퍼플 계열
 
 	
-	const title = `🎰 오늘의 가챠`;
+	const isGuaranteedTicketUsed = usedTicketType === 'guaranteed5' || usedTicketType === 'guaranteed6';
+	const title = isGuaranteedTicketUsed ? '🎁 확정권 사용 결과' : '🎰 오늘의 가챠';
 
 	// 설명: 업데이트 메시지만 표시 (축하 메시지는 별도 필드로)
 	const description = updateMessage || '';
@@ -178,6 +179,14 @@ function createGachaEmbed(gachaMeta, username, avatarURL) {
 	} else if (congratulationText) {
 		fields.push({ name: '특별 획득', value: congratulationText, inline: false });
 		// 여유 공간 추가
+		fields.push({ name: '\u200B', value: '\u200B', inline: false });
+	}
+	if (bonusTicketMessage) {
+		fields.push({ name: '보너스', value: bonusTicketMessage, inline: false });
+		fields.push({ name: '\u200B', value: '\u200B', inline: false });
+	}
+	if (guaranteedTicketMessage) {
+		fields.push({ name: '확정 가챠권', value: guaranteedTicketMessage, inline: false });
 		fields.push({ name: '\u200B', value: '\u200B', inline: false });
 	}
 
