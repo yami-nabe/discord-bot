@@ -3,7 +3,7 @@ const { Client, Events, GatewayIntentBits } = require('discord.js');
 const { sendLongMessage, toShortEmoji, toLongEmoji } = require("../utils/functions");
 const { sendGeminiRequest, sendVertexRequest } = require("../utils/geminiRequest");
 
-let messages = [];
+const channelMessages = new Map();
 
 // 클라이언트 생성
 const client = new Client({
@@ -29,7 +29,14 @@ client.once(Events.ClientReady, () => {
   console.log(`봇이 로그인했습니다: ${client.user.tag}`);
 });
 
-function createPrompt(userMessage) {
+function getChannelMessages(channelId) {
+  if (!channelMessages.has(channelId)) {
+    channelMessages.set(channelId, []);
+  }
+  return channelMessages.get(channelId);
+}
+
+function createPrompt(userMessage, messages) {
   return [
     {
       role: 'user',
@@ -89,6 +96,10 @@ client.on('messageReactionAdd', async (reaction, user) => {
   if (reaction.message.author.id !== client.user.id) return;
 
   const origMessage = reaction.message;
+  const channelId = origMessage.channelId;
+
+  if (!CHANNELS.includes(channelId)) return;
+  const messages = getChannelMessages(channelId);
 
   // Check the type of reaction
   if (reaction.emoji.name === '🔄') {
@@ -119,7 +130,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
       /*
       try {
         // 먼저 Gemini로 시도
-        replyText = await sendGeminiRequest(createPrompt(userMessage));
+        replyText = await sendGeminiRequest(createPrompt(userMessage, messages));
         success = true;
       } catch (geminiError) {
         console.error('Gemini API Error:', geminiError);
@@ -162,14 +173,20 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
 // 메시지 수신 이벤트
 client.on('messageCreate', async message => {
-  console.log(message.content);
+  console.log(`[${message.channelId}] ${message.content}`);
   
   // 봇 메시지 무시
   if (message.author.bot) return;
   
+  // 채널 및 멘션 확인
+  if (!CHANNELS.includes(message.channelId) && !message.mentions.users.has(client.user.id)) return;
+
+  const channelId = message.channelId;
+  const messages = getChannelMessages(channelId);
+
   // 리셋 명령어 처리
   if (resetRegex.test(message.content)) {
-    messages = [];
+    channelMessages.set(channelId, []);
     message.reply("대화가 초기화되었습니다.");
     return;
   }
@@ -177,14 +194,11 @@ client.on('messageCreate', async message => {
   // 삭제 명령어 처리
   if (deleteRegex.test(message.content)) {
     if (messages.length >= 2) {
-      messages.splice(0, messages.length - 2);
+      messages.splice(messages.length - 2);
     }
     await message.reply('Last messages have been deleted.');
     return;
   }
-  
-  // 채널 및 멘션 확인
-  if (!CHANNELS.includes(message.channelId) && !message.mentions.users.has(client.user.id)) return;
 
   // Gemini 명령어 또는 봇 메시지에 대한 답장 확인
   if (!prefixRegex.test(message.content)) {
