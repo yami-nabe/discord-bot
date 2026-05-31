@@ -36,7 +36,9 @@ function getChannelMessages(channelId) {
   return channelMessages.get(channelId);
 }
 
-function createPrompt(userMessage, messages) {
+function createPrompt(userMessage, messages = []) {
+  const history = Array.isArray(messages) ? messages : [];
+
   return [
     {
       role: 'user',
@@ -49,7 +51,7 @@ function createPrompt(userMessage, messages) {
 
 ## <Material: History>` }]
     },
-    ...messages,
+    ...history,
     {
       role: 'user',
       parts: [{ text: `# [Requirements]
@@ -119,7 +121,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
       // 임시로 Vertex만 시도도
       try {
-        replyText = await sendVertexRequest(createPrompt(userMessage), {}, getModelForChannel(origMessage.channelId));
+        replyText = await sendVertexRequest(createPrompt(userMessage, messages), {}, getModelForChannel(origMessage.channelId));
         success = true;
       } catch (vertexError) {
         console.error('Vertex API Error:', vertexError);
@@ -136,7 +138,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
         console.error('Gemini API Error:', geminiError);
         // Gemini 실패 시 Vertex로 폴백
         try {
-          replyText = await sendVertexRequest(createPrompt(userMessage), {}, getModelForChannel(message.channelId));
+          replyText = await sendVertexRequest(createPrompt(userMessage, messages), {}, getModelForChannel(message.channelId));
           console.log('Successfully fallback to Vertex API');
           success = true;
         } catch (vertexError) {
@@ -224,14 +226,14 @@ client.on('messageCreate', async message => {
     
     try {
       // Vertex로 시도
-      replyText = await sendVertexRequest(createPrompt(userMessage), {}, getModelForChannel(message.channelId));
+      replyText = await sendVertexRequest(createPrompt(userMessage, messages), {}, getModelForChannel(message.channelId));
       success = true;
     } catch (geminiError) {
       console.error('Gemini API Error:', geminiError);
       // Gemini 실패 시 Vertex로 폴백
       /*
       try {
-        replyText = await sendVertexRequest(createPrompt(userMessage), {}, getModelForChannel(message.channelId));
+        replyText = await sendVertexRequest(createPrompt(userMessage, messages), {}, getModelForChannel(message.channelId));
         console.log('Successfully fallback to Vertex API');
         success = true;
       } catch (vertexError) {
