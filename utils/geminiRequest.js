@@ -50,7 +50,7 @@ const defaultGenerationConfig = {
  * @param {Object} generationConfig - 생성 설정 (maxOutputTokens, temperature 등)
  * @returns {Promise<string>} AI 응답 텍스트
  */
-async function sendVertexRequest(chatHistory, generationConfig = {}) {
+async function sendVertexRequest(chatHistory, generationConfig = {}, model = 'gemini-3.1-pro-preview') {
     try {
         // 액세스 토큰 가져오기
         const token = await getAccessToken(VERTEX_JSON.client_email, VERTEX_JSON.private_key);
@@ -60,7 +60,7 @@ async function sendVertexRequest(chatHistory, generationConfig = {}) {
 
         // Vertex AI에 POST 리퀘스트 보내기
         const result = await axios.post(
-            `https://aiplatform.googleapis.com/v1/projects/new-new-492111/locations/global/publishers/google/models/gemini-3.1-pro-preview:generateContent`,
+            `https://aiplatform.googleapis.com/v1/projects/new-new-492111/locations/global/publishers/google/models/${model}:generateContent`,
             {
                 contents: chatHistory,
                 generationConfig: config,
