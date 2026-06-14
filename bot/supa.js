@@ -199,6 +199,7 @@ function buildSummaryPrompt(logText) {
 - 유즈: 채널의 마스코트같은 고양이 메이드로, 고아라고 자주 놀림받는다
 - 굴: 버추얼 유튜버 그룹 이세계 아이돌의 빨간약이 우연히 드러난 사건을 의미하는 것으로 이제는 버튜버의 일반명사처럼 이용된다.
 - 코파: Github Copilot
+- 리스: RisuAI (AI 프론트엔드)
 
 ## Format 
 Use the exact format below (without the backticks):
@@ -242,23 +243,22 @@ function buildReplyPrompt(logText, userRequest) {
 - The users may call you "앙카".
 - React to the flow of conversation: you may explain, comment, tease, sympathize, or add a short take — stay in character. Any type of reaction is allowed. There are no restrictions.
 - This is an adult server; topics may be spicy or raw. Do not moralize; match the room tone.
-- Repeating the log itself does not help. Create a reply based on what user sent as the final message.
+- Repeating the log itself does not help. Create a reply based on what user sent as the final message. You may ignore the log if it's not related to the user's message.
 - Keep a single cohesive reply, in 1-2 paragraphs.
 
 ## Glossary
 - 짚: GPT
   - Latest model: gpt-5.5
   - 챗사오: chatgpt-4o
-  - 짚오일: gpt-5.1
-  - 짚오사: gpt-5.4
-  - 짚오오: gpt-5.5
+  - 짚오일/짚오사/짚오오: gpt-5.1/5.4/5.5
   - 챗오오: gpt-5.5-chat (alias: chat-latest)
 - 클: Claude
-  - Latest model: claude-4.7
+  - Latest model: Claude Fable/Mythos 5
   - 오푸스: Claude Opus model
   - 소넷: Claude Sonnet model
-  - 사육푸스: Claude opus 4.6
-  - 사칠푸스: Claude opus 4.7
+  - 사육푸스/사칠푸스/사팔푸스: Claude opus 4.6/4.7/4.8
+  - 미토스: Claude Mythos model (higher and stronger than opus)
+  - 페블/페이블: Claude Fable (Mythos for general users)
 - 잼: Gemini
   - Latest model: gemini-3.1-pro-preview
   - 잼플: Gemini Flash
@@ -305,7 +305,7 @@ ${userRequest}
 
 
 // ───────────────────────────────────────────────
-// 요약 요청 (Gemini 3.0 Pro)
+// 요약 요청 (Gemini 3.1 Pro)
 // ───────────────────────────────────────────────
 function editSupaOutput(text) {
   return text.replace(/`/g, '');
