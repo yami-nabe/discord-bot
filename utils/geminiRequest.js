@@ -60,7 +60,7 @@ async function sendVertexRequest(chatHistory, generationConfig = {}, model = 'ge
 
         // Vertex AI에 POST 리퀘스트 보내기
         const result = await axios.post(
-            `https://aiplatform.googleapis.com/v1/projects/new-new-492111/locations/global/publishers/google/models/${model}:generateContent`,
+            `https://aiplatform.googleapis.com/v1/projects/${VERTEX_JSON.project_id}/locations/global/publishers/google/models/${model}:generateContent`,
             {
                 contents: chatHistory,
                 generationConfig: config,
