@@ -15,7 +15,7 @@ const client = new Client({
   ],
 });
 
-const CHANNELS = ['1231315330316501083', ];
+const CHANNELS = ['1339130293403254784', ];
 
 const prefixRegex = /^(deepseek|ds)/i;
 const resetRegex = /!reset/i;
@@ -179,4 +179,4 @@ client.on(Events.Error, (error) => {
 });
 
 // 봇 로그인
-client.login(process.env.DEEPSEEK_TOKEN || process.env.GPT_TOKEN); 
+client.login(process.env.DEEPSEEK_TOKEN); 
