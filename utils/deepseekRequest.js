@@ -2,7 +2,7 @@ const axios = require('axios');
 require('dotenv/config');
 
 const DEEPSEEK_API_URL = 'https://wellspring.encrypt.gay/v1/chat/completions';
-const DEEPSEEK_MODEL = 'deepseek-v4-pro';
+const DEEPSEEK_MODEL = 'deepseek-v4-flash';
 
 /**
  * DeepSeek 요청을 OpenAI 호환 Chat Completions 포맷으로 보내는 함수
