@@ -3,6 +3,7 @@ require('dotenv/config');
 
 const DEEPSEEK_API_URL = 'https://wellspring.encrypt.gay/v1/chat/completions';
 const DEEPSEEK_MODEL = 'deepseek-v4-flash';
+const TIMEOUT = 300000; // 5분
 
 /**
  * DeepSeek 요청을 OpenAI 호환 Chat Completions 포맷으로 보내는 함수
@@ -31,7 +32,7 @@ async function sendDeepSeekRequest(prompt) {
       },
       {
         headers,
-        timeout: 30000
+        timeout: TIMEOUT
       }
     );
 
