@@ -18,7 +18,7 @@ const client = new Client({
 const CHANNELS = ['1246012810358423635', '1506648038859608074'];
 const FLASH_CHANNEL = '1506648038859608074';
 const DEFAULT_MODEL = 'gemini-3.1-pro-preview';
-const FLASH_MODEL = 'gemini-3.5-flash';
+const FLASH_MODEL = 'gemini-3.6-flash';
 
 const prefixRegex = /^gem(ini)?/i;
 const resetRegex = /!reset/i;
