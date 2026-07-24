@@ -1,8 +1,8 @@
 const axios = require('axios');
 require('dotenv/config');
 
-const DEEPSEEK_API_URL = 'https://wellspring.encrypt.gay/v1/chat/completions';
-const DEEPSEEK_MODEL = 'deepseek-v4-flash';
+const DEEPSEEK_API_URL = 'https://api.llmgateway.io/v1/chat/completions';
+const DEEPSEEK_MODEL = 'deepseek-v4-pro';
 const TIMEOUT = 300000; // 5분
 
 /**
