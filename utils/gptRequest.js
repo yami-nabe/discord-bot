@@ -16,7 +16,7 @@ const PROXY_KEY = process.env.GPT_KEY;
 async function sendGPTRequest(prompt, model = 'gpt-5.6-terra') {
   try {
     const response = await axios.post(
-      `${PROXY_URL}/proxy/openai/v1/chat/completions`,
+      `${PROXY_URL}`,
       {
         model: model,
         messages: prompt,
