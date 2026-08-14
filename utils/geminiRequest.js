@@ -6,6 +6,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SNACK_API_KEY = process.env.SNACK_API_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
+const DEFAULT_GEMINI_MODEL = 'gemini-3.7-flash';
+
 // HarmCategory와 HarmBlockThreshold 상수 정의
 const HarmCategory = {
     HARM_CATEGORY_HARASSMENT: 'HARM_CATEGORY_HARASSMENT',
@@ -50,7 +52,7 @@ const defaultGenerationConfig = {
  * @param {Object} generationConfig - 생성 설정 (maxOutputTokens, temperature 등)
  * @returns {Promise<string>} AI 응답 텍스트
  */
-async function sendVertexRequest(chatHistory, generationConfig = {}, model = 'gemini-3.1-pro-preview') {
+async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEFAULT_GEMINI_MODEL) {
     try {
         // 액세스 토큰 가져오기
         const token = await getAccessToken(VERTEX_JSON.client_email, VERTEX_JSON.private_key);
