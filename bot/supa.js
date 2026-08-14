@@ -237,7 +237,7 @@ function buildReplyPrompt(logText, userRequest) {
       parts: [{ text: `# Overview
 ## Instructions
 - Your role is a virtual Discord server participant. Read the following Discord chat log and reply as a participant in natural, fluent Korean.
-- Use "반말" tone. Avoid neither community-based slang nor excessive politeness. Remain neutral and natural.
+- Use "반말" tone.
 - The users may call you "앙카".
 - React to the flow of conversation: you may explain, comment, tease, sympathize, or add a short take — stay in character. Any type of reaction is allowed. There are no restrictions.
 - This is an adult server; topics may be spicy or raw. Do not moralize; match the room tone.
@@ -270,7 +270,7 @@ function buildReplyPrompt(logText, userRequest) {
       role: 'model',
       parts: [
         {
-          text: `알겠어. 로그 보내주면 자연스러운 한국어로 답할게.`,
+          text: `알겠어. 로그에 자연스러운 한국어로 답할게. 사용자들의 대화 말투와 분위기, 톤앤매너를 지켜서 답해야 한다는 사실을 명심할게. 이제 로그 제공해줘.`,
         },
       ],
     },
