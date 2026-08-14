@@ -6,7 +6,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SNACK_API_KEY = process.env.SNACK_API_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
-const DEFAULT_GEMINI_MODEL = 'gemini-3.7-flash';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.1-pro-preview';
 
 // HarmCategory와 HarmBlockThreshold 상수 정의
 const HarmCategory = {
