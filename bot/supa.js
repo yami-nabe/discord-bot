@@ -46,7 +46,7 @@ const GACHA_CELEBRATION_CHANNEL_ID = '1327739713427341343';
 const SUPA_LIMIT_TIME = 50 * 60 * 1000; // 50분
 
 client.once(Events.ClientReady, () => {
-  console.log(`Supa Memory (gemini-3-pro-preview) Ready!`);
+  console.log(`Supa Memory (gemini) Ready!`);
 });
 
 // ───────────────────────────────────────────────
@@ -179,25 +179,23 @@ function buildSummaryPrompt(logText) {
 
 ## Glossary
 - 짚: GPT
-  - Latest model: gpt-5.5
+  - Latest model: gpt-5.6
+    - 5.6 models: sol/luna/terra. Sol is the highest, Luna is the middle, and Terra is the lowest.
   - 챗사오: chatgpt-4o
-  - 짚오일: gpt-5.1
-  - 짚오사: gpt-5.4
-  - 짚오오: gpt-5.5
+  - 짚오일/짚오사/짚오오: gpt-5.1/5.4/5.5
   - 챗오오: gpt-5.5-chat (alias: chat-latest)
 - 클: Claude
-  - Latest model: claude-4.7
+  - Latest model: Claude Fable/Mythos, Opus 5
   - 오푸스: Claude Opus model
   - 소넷: Claude Sonnet model
-  - 사육푸스: Claude opus 4.6
-  - 사칠푸스: Claude opus 4.7
+  - 사육푸스/사칠푸스/사팔푸스/오오푸스: Claude opus 4.6/4.7/4.8/5
+  - 미토스: Claude Mythos model (higher and stronger than opus)
+  - 페블/페이블: Claude Fable (Mythos for general users)
 - 잼: Gemini
-  - Latest model: gemini-3.1-pro-preview
+  - Latest model: gemini-3.1-pro-preview, gemini-3.7-flash
   - 잼플: Gemini Flash
   - 잼프로: Gemini Pro
 - 챗챈: AI 채팅 채널 (아카라이브)
-- 유즈: 채널의 마스코트같은 고양이 메이드로, 고아라고 자주 놀림받는다
-- 굴: 버추얼 유튜버 그룹 이세계 아이돌의 빨간약이 우연히 드러난 사건을 의미하는 것으로 이제는 버튜버의 일반명사처럼 이용된다.
 - 코파: Github Copilot
 - 리스: RisuAI (AI 프론트엔드)
 
@@ -248,23 +246,25 @@ function buildReplyPrompt(logText, userRequest) {
 
 ## Glossary
 - 짚: GPT
-  - Latest model: gpt-5.5
+  - Latest model: gpt-5.6
+    - 5.6 models: sol/luna/terra. Sol is the highest, Luna is the middle, and Terra is the lowest.
   - 챗사오: chatgpt-4o
   - 짚오일/짚오사/짚오오: gpt-5.1/5.4/5.5
   - 챗오오: gpt-5.5-chat (alias: chat-latest)
 - 클: Claude
-  - Latest model: Claude Fable/Mythos 5
+  - Latest model: Claude Fable/Mythos, Opus 5
   - 오푸스: Claude Opus model
   - 소넷: Claude Sonnet model
-  - 사육푸스/사칠푸스/사팔푸스: Claude opus 4.6/4.7/4.8
+  - 사육푸스/사칠푸스/사팔푸스/오오푸스: Claude opus 4.6/4.7/4.8/5
   - 미토스: Claude Mythos model (higher and stronger than opus)
   - 페블/페이블: Claude Fable (Mythos for general users)
 - 잼: Gemini
-  - Latest model: gemini-3.1-pro-preview
+  - Latest model: gemini-3.1-pro-preview, gemini-3.7-flash
   - 잼플: Gemini Flash
   - 잼프로: Gemini Pro
 - 챗챈: AI 채팅 채널 (아카라이브)
-- 코파: Github Copilot` }],
+- 코파: Github Copilot
+- 리스: RisuAI (AI 프론트엔드)` }],
     },
     {
       role: 'model',
@@ -319,7 +319,7 @@ async function requestSummary(channelId) {
   if (cached) return cached;
 
   const prompt = buildSummaryPrompt(logToText(channelId));
-  const response = await sendVertexRequest(prompt);
+  const response = await sendVertexRequest(prompt, {model: 'gemini-3.7-flash'});
 
   log.setLastResponse(response);
   return editSupaOutput(response);
@@ -334,7 +334,7 @@ async function requestReply(channelId, userRequest) {
   if (cached) return cached;
 
   const prompt = buildReplyPrompt(logToText(channelId), userRequest);
-  const response = await sendVertexRequest(prompt);
+  const response = await sendVertexRequest(prompt, {model: 'gemini-3.7-flash'});
 
   log.setLastReplyResponse(response, requestKey);
   return editSupaOutput(response);
