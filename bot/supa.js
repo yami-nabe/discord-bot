@@ -319,7 +319,7 @@ async function requestSummary(channelId) {
   if (cached) return cached;
 
   const prompt = buildSummaryPrompt(logToText(channelId));
-  const response = await sendVertexRequest(prompt, {model: 'gemini-3.7-flash'});
+  const response = await sendVertexRequest(prompt);
 
   log.setLastResponse(response);
   return editSupaOutput(response);
@@ -334,7 +334,7 @@ async function requestReply(channelId, userRequest) {
   if (cached) return cached;
 
   const prompt = buildReplyPrompt(logToText(channelId), userRequest);
-  const response = await sendVertexRequest(prompt, {model: 'gemini-3.7-flash'});
+  const response = await sendVertexRequest(prompt);
 
   log.setLastReplyResponse(response, requestKey);
   return editSupaOutput(response);
