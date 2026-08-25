@@ -132,6 +132,7 @@ class TimedLog {
 }
 
 const channelLogs = new Map();
+const ANKA_LOG_AUTHOR = '__anka__';
 
 // ───────────────────────────────────────────────
 // 로그 → LLM 텍스트 변환
@@ -145,6 +146,7 @@ function logToText(channelId) {
   let n = 1;
 
   entries.forEach((msg) => {
+    if (msg.author === ANKA_LOG_AUTHOR) return;
     if (!map.has(msg.author)) {
       map.set(msg.author, `챗붕 ${n}`);
       n++;
@@ -154,7 +156,7 @@ function logToText(channelId) {
   return entries
     .map(
       (m) =>
-        `${map.get(m.author)} ${formatTimestamp(m.timestamp)}\n${m.content}`
+        `${m.author === ANKA_LOG_AUTHOR ? '앙카' : map.get(m.author)} ${formatTimestamp(m.timestamp)}\n${m.content}`
     )
     .join('\n');
 }
@@ -325,7 +327,7 @@ async function requestSummary(channelId) {
   return editSupaOutput(response);
 }
 
-async function requestReply(channelId, userRequest) {
+async function requestReply(channelId, userRequest, contextLogText = logToText(channelId)) {
   const log = channelLogs.get(channelId);
   if (!log) return null;
 
@@ -333,7 +335,7 @@ async function requestReply(channelId, userRequest) {
   const cached = log.getLastReplyResponse(requestKey);
   if (cached) return cached;
 
-  const prompt = buildReplyPrompt(logToText(channelId), userRequest);
+  const prompt = buildReplyPrompt(contextLogText, userRequest);
   const response = await sendVertexRequest(prompt);
 
   log.setLastReplyResponse(response, requestKey);
@@ -472,7 +474,20 @@ client.on('messageCreate', async (message) => {
     try {
       await message.react('✅');
       const ankaExtra = extractAnkaUserRequest(message.content);
-      const text = await requestReply(message.channelId, ankaExtra);
+      // 질문을 로그에 추가하기 전 문맥을 보존해 기존 프롬프트 동작을 유지한다.
+      const contextLogText = logToText(message.channelId);
+      log.add({
+        timestamp: Date.now(),
+        content: message.content,
+        author: message.author.id,
+      });
+
+      const text = await requestReply(message.channelId, ankaExtra, contextLogText);
+      log.add({
+        timestamp: Date.now(),
+        content: text,
+        author: ANKA_LOG_AUTHOR,
+      });
       await sendLongMessage(message, text);
       return;
     } catch (error) {
