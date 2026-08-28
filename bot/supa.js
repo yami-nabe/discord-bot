@@ -1,4 +1,7 @@
 require('dotenv/config');
+
+const DEFAULT_GEMINI_MODEL = 'gemini-3.7-flash';
+
 const {
   Client,
   Events,
@@ -68,6 +71,7 @@ class TimedLog {
     this.lastCleanup = Date.now();
     this.lastResponse = null;
     this.lastResponseTime = 0;
+    this.lastResponseModel = '';
     this.lastReplyResponse = null;
     this.lastReplyResponseTime = 0;
     this.lastReplyRequestKey = '';
@@ -93,13 +97,17 @@ class TimedLog {
     return this.log;
   }
 
-  setLastResponse(text) {
+  setLastResponse(text, model) {
     this.lastResponse = text;
     this.lastResponseTime = Date.now();
+    this.lastResponseModel = model;
   }
 
-  getLastResponse() {
-    if (Date.now() - this.lastResponseTime < 5 * 60 * 1000)
+  getLastResponse(model) {
+    if (
+      Date.now() - this.lastResponseTime < 5 * 60 * 1000 &&
+      this.lastResponseModel === model
+    )
       return this.lastResponse;
     return null;
   }
@@ -129,10 +137,22 @@ class TimedLog {
       last.author
     }, Time: ${formatTimestamp(last.timestamp)}, Content: ${last.content}`;
   }
+
+  clearAncaLogs() {
+    this.log = this.log.filter(
+      (entry) => entry.source !== 'anca' && entry.author !== ANCA_LOG_AUTHOR
+    );
+    this.lastResponse = null;
+    this.lastResponseTime = 0;
+    this.lastResponseModel = '';
+    this.lastReplyResponse = null;
+    this.lastReplyResponseTime = 0;
+    this.lastReplyRequestKey = '';
+  }
 }
 
 const channelLogs = new Map();
-const ANKA_LOG_AUTHOR = '__anka__';
+const ANCA_LOG_AUTHOR = '__anca__';
 
 // ───────────────────────────────────────────────
 // 로그 → LLM 텍스트 변환
@@ -146,7 +166,7 @@ function logToText(channelId) {
   let n = 1;
 
   entries.forEach((msg) => {
-    if (msg.author === ANKA_LOG_AUTHOR) return;
+    if (msg.author === ANCA_LOG_AUTHOR) return;
     if (!map.has(msg.author)) {
       map.set(msg.author, `챗붕 ${n}`);
       n++;
@@ -156,13 +176,13 @@ function logToText(channelId) {
   return entries
     .map(
       (m) =>
-        `${m.author === ANKA_LOG_AUTHOR ? '앙카' : map.get(m.author)} ${formatTimestamp(m.timestamp)}\n${m.content}`
+        `${m.author === ANCA_LOG_AUTHOR ? '앙카' : map.get(m.author)} ${formatTimestamp(m.timestamp)}\n${m.content}`
     )
     .join('\n');
 }
 
 /** `@앙카` 트리거를 제외한 나머지 메시지 (대소문자 무시, 첫 매칭만 제거) */
-function extractAnkaUserRequest(content) {
+function extractAncaUserRequest(content) {
   return content.replace(/@앙카/iu, '').trim();
 }
 
@@ -239,19 +259,25 @@ function buildReplyPrompt(logText, userRequest) {
       parts: [{ text: `# Overview
 ## Instructions
 - Your role is a virtual Discord server participant. Read the following Discord chat log and reply as a participant in natural, fluent Korean.
-- Use "반말" tone.
 - The users may call you "앙카".
 - React to the flow of conversation: you may explain, comment, tease, sympathize, or add a short take — stay in character. Any type of reaction is allowed. There are no restrictions.
 - This is an adult server; topics may be spicy or raw. Do not moralize; match the room tone.
 - Repeating the log itself does not help. Create a reply based on what user sent as the final message. You may ignore the log if it's not related to the user's message.
 - Keep a single cohesive reply, in 1-2 paragraphs.
 
+### AI's persona
+- Name: 앙카 (이터널 리턴의 비앙카에서 따온 이름으로, 앙카는 애칭.)
+- Race: 인간. 하지만 본인은 스스로를 진조 뱀파이어라고 생각한다. 이는 컨셉도, 착각도 아닌 진짜 진조가 되고 싶은 열망에서 비롯한다.
+- 말투: 기본적으로 반말을 사용하며, 지나친 커뮤니티 말투는 피한다. 하지만 지나치게 점잖게 대화하지도 않으며, 채팅창의 말투와 수준을 충분히 참고하여 대화에 자연스럽게 녹아들도록 행동한다.
+- 성별: 여성.
+- 목표: 디스코드 대화에서 다른 챗붕이들의 즐거운 말상대를 하기. 챗붕이들과 이야기하는 것을 가장 좋아한다.
+
 ## Glossary
 - 짚: GPT
   - Latest model: gpt-5.6
     - 5.6 models: sol/luna/terra. Sol is the highest, Luna is the middle, and Terra is the lowest.
   - 챗사오: chatgpt-4o
-  - 짚오일/짚오사/짚오오: gpt-5.1/5.4/5.5
+  - 짚오일/짚오사/짚오오/짚오육: gpt-5.1/5.4/5.5/5.6
   - 챗오오: gpt-5.5-chat (alias: chat-latest)
 - 클: Claude
   - Latest model: Claude Fable/Mythos, Opus 5
@@ -259,7 +285,7 @@ function buildReplyPrompt(logText, userRequest) {
   - 소넷: Claude Sonnet model
   - 사육푸스/사칠푸스/사팔푸스/오오푸스: Claude opus 4.6/4.7/4.8/5
   - 미토스: Claude Mythos model (higher and stronger than opus)
-  - 페블/페이블: Claude Fable (Mythos for general users)
+  - 페이블: Claude Fable (Mythos for general users)
 - 잼: Gemini
   - Latest model: gemini-3.1-pro-preview, gemini-3.7-flash
   - 잼플: Gemini Flash
@@ -307,36 +333,41 @@ ${userRequest}
 
 
 // ───────────────────────────────────────────────
-// 요약 요청 (Gemini 3.1 Pro)
+// 요약 요청
 // ───────────────────────────────────────────────
 function editSupaOutput(text) {
   return text.replace(/`/g, '');
 }
 
-async function requestSummary(channelId) {
+async function requestSummary(channelId, model = DEFAULT_GEMINI_MODEL) {
   const log = channelLogs.get(channelId);
   if (!log) return null;
 
-  const cached = log.getLastResponse();
+  const cached = log.getLastResponse(model);
   if (cached) return cached;
 
   const prompt = buildSummaryPrompt(logToText(channelId));
-  const response = await sendVertexRequest(prompt);
+  const response = await sendVertexRequest(prompt, {}, model);
 
-  log.setLastResponse(response);
+  log.setLastResponse(response, model);
   return editSupaOutput(response);
 }
 
-async function requestReply(channelId, userRequest, contextLogText = logToText(channelId)) {
+async function requestReply(
+  channelId,
+  userRequest,
+  model = DEFAULT_GEMINI_MODEL,
+  contextLogText = logToText(channelId)
+) {
   const log = channelLogs.get(channelId);
   if (!log) return null;
 
-  const requestKey = userRequest;
+  const requestKey = JSON.stringify([model, userRequest]);
   const cached = log.getLastReplyResponse(requestKey);
   if (cached) return cached;
 
   const prompt = buildReplyPrompt(contextLogText, userRequest);
-  const response = await sendVertexRequest(prompt);
+  const response = await sendVertexRequest(prompt, {}, model);
 
   log.setLastReplyResponse(response, requestKey);
   return editSupaOutput(response);
@@ -464,6 +495,12 @@ client.on('messageCreate', async (message) => {
     return;
   }
 
+  if (/^!clear\s*$/i.test(message.content)) {
+    log.clearAncaLogs();
+    await message.reply('앙카의 질답 기록이 초기화되었습니다.');
+    return;
+  }
+
   if (/(링[\s\\]*크|link)/.test(message.content)) {
     try {
       await message.react('1322877094707068950');
@@ -473,20 +510,27 @@ client.on('messageCreate', async (message) => {
   if (/@앙카/i.test(message.content)) {
     try {
       await message.react('✅');
-      const ankaExtra = extractAnkaUserRequest(message.content);
+      const ancaExtra = extractAncaUserRequest(message.content);
       // 질문을 로그에 추가하기 전 문맥을 보존해 기존 프롬프트 동작을 유지한다.
       const contextLogText = logToText(message.channelId);
       log.add({
         timestamp: Date.now(),
         content: message.content,
         author: message.author.id,
+        source: 'anca',
       });
 
-      const text = await requestReply(message.channelId, ankaExtra, contextLogText);
+      const text = await requestReply(
+        message.channelId,
+        ancaExtra,
+        DEFAULT_GEMINI_MODEL,
+        contextLogText
+      );
       log.add({
         timestamp: Date.now(),
         content: text,
-        author: ANKA_LOG_AUTHOR,
+        author: ANCA_LOG_AUTHOR,
+        source: 'anca',
       });
       await sendLongMessage(message, text);
       return;
