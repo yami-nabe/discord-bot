@@ -81,8 +81,8 @@ function generateRandomCharacter(rarity) {
         return characters[randomIndex];
     } else if (rarity === 5) {
         const pickupCharacters = dictionary.현재픽업;
-        const fivestarRandom = Math.random();
-        if (fivestarRandom <= 0.5 && pickupCharacters && pickupCharacters.length > 0) {
+        // 픽업이 있을 때만 픽업/통상 확률을 판정하고, 없으면 통상 목록에서 바로 추첨한다.
+        if (pickupCharacters && pickupCharacters.length > 0 && Math.random() <= 0.5) {
             // 픽업 캐릭터 중에서 랜덤 선택
             const randomPickupIndex = Math.floor(Math.random() * pickupCharacters.length);
             return pickupCharacters[randomPickupIndex];

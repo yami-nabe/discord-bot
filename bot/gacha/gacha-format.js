@@ -118,7 +118,7 @@ function formatGachaResultsDetailed(gachaData, userId, updateFiveStarStats) {
 // Discord Embed 생성 함수
 function createGachaEmbed(gachaMeta, username, avatarURL) {
 	const { EmbedBuilder } = require('discord.js');
-	const { updateMessage, isRarePack, emojiLines, summaryMap, congratulationText, bonusTicketMessage, guaranteedTicketMessage, usedTicketType, hasSixStar, hasFiveStar } = gachaMeta;
+	const { updateMessage, lemonDustMessage, isRarePack, emojiLines, summaryMap, congratulationText, bonusTicketMessage, guaranteedTicketMessage, usedTicketType, hasSixStar, hasFiveStar } = gachaMeta;
 
 	// 색상 및 타이틀 이모지 선정
 	let color = 0x5865f2; // 기본 디스코드 블루
@@ -188,6 +188,10 @@ function createGachaEmbed(gachaMeta, username, avatarURL) {
 	if (guaranteedTicketMessage) {
 		fields.push({ name: '확정 가챠권', value: guaranteedTicketMessage, inline: false });
 		fields.push({ name: '\u200B', value: '\u200B', inline: false });
+	}
+
+	if (lemonDustMessage) {
+		fields.push({ name: '✨ 레몬빛 가루', value: lemonDustMessage, inline: false });
 	}
 
 	// 요약을 마지막에 배치

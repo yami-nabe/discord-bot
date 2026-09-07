@@ -201,12 +201,15 @@ async function handleGachaCommand(userId, channelId) {
     gachaData.results.forEach(rarity => {
         totalLemonDust += lemonDustRewards[rarity] || 0;
     });
+    let currentLemonDust = userAfter.lemonDust || 0;
     if (totalLemonDust > 0) {
-        await updateUser(userId, user => {
+        const rewardedUser = await updateUser(userId, user => {
             if (user.lemonDust === undefined) user.lemonDust = 0;
             user.lemonDust += totalLemonDust;
         });
+        currentLemonDust = rewardedUser.lemonDust;
     }
+    const lemonDustMessage = `이번 획득: **${totalLemonDust.toLocaleString('ko-KR')}개** · 현재 보유: **${currentLemonDust.toLocaleString('ko-KR')}개**`;
     
     const formattedResults = formatGachaResults(gachaData, userId, updateFiveStarStats);
     const detailed = formatGachaResultsDetailed(gachaData, userId, updateFiveStarStats);
@@ -230,9 +233,10 @@ async function handleGachaCommand(userId, channelId) {
     }
     
     return {
-        plainText: `${updateResult.message}\n\n**<a:lemon_click:1122183344818495608> 오늘의 가챠 결과: <a:lemon_click:1122183344818495608>**${rarePackMessage}${bonusTicketMessage}\n${formattedResults}`,
+        plainText: `${updateResult.message}\n\n**<a:lemon_click:1122183344818495608> 오늘의 가챠 결과: <a:lemon_click:1122183344818495608>**${rarePackMessage}${bonusTicketMessage}\n${formattedResults}\n\n✨ **레몬빛 가루**\n${lemonDustMessage}`,
         meta: {
             updateMessage: updateResult.message,
+            lemonDustMessage,
             isRarePack: gachaData.isRarePack,
             gridText: detailed.gridText,
             emojiLines: detailed.emojiLines,
@@ -248,6 +252,7 @@ async function handleGachaCommand(userId, channelId) {
         },
         embed: createGachaEmbed({
             updateMessage: updateResult.message,
+            lemonDustMessage,
             isRarePack: gachaData.isRarePack,
             gridText: detailed.gridText,
             emojiLines: detailed.emojiLines,
