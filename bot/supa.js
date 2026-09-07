@@ -11,8 +11,8 @@ const {
 } = require('discord.js');
 
 const { sendLongMessage } = require('../utils/functions');
-const { sendGPTRequest } = require('../utils/gptRequest');
-const { sendGeminiRequest , sendVertexRequest} = require('../utils/geminiRequest');
+const { sendVertexRequest } = require('../utils/geminiRequest');
+const { DEFAULT_PERSONA, matchPersonaRequest } = require('./prompts/personas');
 const {
   handleGachaCommand,
   getGachaInfo,
@@ -142,9 +142,9 @@ class TimedLog {
     }, Time: ${formatTimestamp(last.timestamp)}, Content: ${last.content}`;
   }
 
-  clearAncaLogs() {
+  clearPersonaLogs() {
     this.log = this.log.filter(
-      (entry) => entry.source !== 'anca' && entry.author !== ANCA_LOG_AUTHOR
+      (entry) => entry.source !== 'persona'
     );
     this.lastResponse = null;
     this.lastResponseTime = 0;
@@ -156,7 +156,6 @@ class TimedLog {
 }
 
 const channelLogs = new Map();
-const ANCA_LOG_AUTHOR = '__anca__';
 
 // ───────────────────────────────────────────────
 // 로그 → LLM 텍스트 변환
@@ -170,7 +169,7 @@ function logToText(channelId) {
   let n = 1;
 
   entries.forEach((msg) => {
-    if (msg.author === ANCA_LOG_AUTHOR) return;
+    if (msg.personaName) return;
     if (!map.has(msg.author)) {
       map.set(msg.author, `챗붕 ${n}`);
       n++;
@@ -180,14 +179,9 @@ function logToText(channelId) {
   return entries
     .map(
       (m) =>
-        `${m.author === ANCA_LOG_AUTHOR ? '앙카' : map.get(m.author)} ${formatTimestamp(m.timestamp)}\n${m.content}`
+        `${m.personaName || map.get(m.author)} ${formatTimestamp(m.timestamp)}\n${m.content}`
     )
     .join('\n');
-}
-
-/** `@앙카` 트리거를 제외한 나머지 메시지 (대소문자 무시, 첫 매칭만 제거) */
-function extractAncaUserRequest(content) {
-  return content.replace(/@앙카/iu, '').trim();
 }
 
 // ───────────────────────────────────────────────
@@ -214,21 +208,24 @@ async function requestSummary(channelId, model = DEFAULT_GEMINI_MODEL) {
 async function requestReply(
   channelId,
   userRequest,
-  model = DEFAULT_GEMINI_MODEL,
-  contextLogText = logToText(channelId)
+  {
+    persona = DEFAULT_PERSONA,
+    model = DEFAULT_GEMINI_MODEL,
+    contextLogText = logToText(channelId),
+  } = {}
 ) {
   const log = channelLogs.get(channelId);
   if (!log) return null;
 
-  const requestKey = JSON.stringify([model, userRequest]);
+  const requestKey = JSON.stringify([persona.id, model, userRequest]);
   const cached = log.getLastReplyResponse(requestKey);
   if (cached) return cached;
 
-  const prompt = buildReplyPrompt(contextLogText, userRequest);
-  const response = await sendVertexRequest(prompt, {}, model);
+  const prompt = buildReplyPrompt(contextLogText, userRequest, persona);
+  const response = editSupaOutput(await sendVertexRequest(prompt, {}, model));
 
   log.setLastReplyResponse(response, requestKey);
-  return editSupaOutput(response);
+  return response;
 }
 
 // ───────────────────────────────────────────────
@@ -354,8 +351,8 @@ client.on('messageCreate', async (message) => {
   }
 
   if (/^!clear\s*$/i.test(message.content)) {
-    log.clearAncaLogs();
-    await message.reply('앙카의 질답 기록이 초기화되었습니다.');
+    log.clearPersonaLogs();
+    await message.reply('모든 페르소나의 질답 기록이 초기화되었습니다.');
     return;
   }
 
@@ -365,30 +362,33 @@ client.on('messageCreate', async (message) => {
     } catch {}
   }
 
-  if (/@앙카/i.test(message.content)) {
+  const personaRequest = matchPersonaRequest(message.content);
+  if (personaRequest) {
     try {
       await message.react('✅');
-      const ancaExtra = extractAncaUserRequest(message.content);
+      const { persona, userRequest } = personaRequest;
       // 질문을 로그에 추가하기 전 문맥을 보존해 기존 프롬프트 동작을 유지한다.
       const contextLogText = logToText(message.channelId);
       log.add({
         timestamp: Date.now(),
         content: message.content,
         author: message.author.id,
-        source: 'anca',
+        source: 'persona',
+        personaId: persona.id,
       });
 
       const text = await requestReply(
         message.channelId,
-        ancaExtra,
-        DEFAULT_GEMINI_MODEL,
-        contextLogText
+        userRequest,
+        { persona, contextLogText }
       );
       log.add({
         timestamp: Date.now(),
         content: text,
-        author: ANCA_LOG_AUTHOR,
-        source: 'anca',
+        author: `__persona:${persona.id}__`,
+        source: 'persona',
+        personaId: persona.id,
+        personaName: persona.name,
       });
       await sendLongMessage(message, text);
       return;
