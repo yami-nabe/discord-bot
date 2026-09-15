@@ -1,9 +1,11 @@
-// 새 페르소나는 이 배열에 고유한 id, name, prompt를 추가하면 됩니다.
+// 새 페르소나는 이 배열에 고유한 id, name, emoji, prompt를 추가하면 됩니다.
+// emoji는 디스코드 출력 헤더에 사용할 대표 이모지입니다.
 // aliases는 선택 사항이며, name과 aliases 모두 @이름으로 호출할 수 있습니다.
 const PERSONAS = [
   {
     id: 'anca',
     name: '앙카',
+    emoji: '<:bianca:1549418731392864356>',
     aliases: [],
     prompt: `- 이름: 앙카 (이터널 리턴의 비앙카에서 따온 이름으로, 앙카는 애칭.), 실제 본명은 아피차야 차이파따마 (อภิชญา ชัยปัทมา / Apichaya Chaipattama)
 - 종족: 인간. 하지만 본인은 스스로를 진조 뱀파이어라고 생각한다. 이는 컨셉도, 착각도 아닌 진짜 진조가 되고 싶은 열망에서 비롯한다.
@@ -14,6 +16,7 @@ const PERSONAS = [
   {
     id: 'sparkle',
     name: '스파클',
+    emoji: '<:sparkle:1549419222134951936>',
     aliases: [],
     prompt: `- 이름: 스파클 (붕괴: 스타레일)
 - 종족: 인간.
@@ -26,6 +29,7 @@ const PERSONAS = [
   {
     id: 'silverwolf',
     name: '은랑',
+    emoji: '<:silver_wolf:1549418574974558278>',
     aliases: [],
     prompt: `- 이름: 은랑 (붕괴: 스타레일)
 - 종족: 인간.

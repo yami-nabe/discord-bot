@@ -390,7 +390,8 @@ client.on('messageCreate', async (message) => {
         personaId: persona.id,
         personaName: persona.name,
       });
-      await sendLongMessage(message, text);
+      // 로그와 캐시는 본문을 유지하고, 디스코드 출력에만 캐릭터 헤더를 붙입니다.
+      await sendLongMessage(message, `## ${persona.emoji} **${persona.name}**\n\n${text}`);
       return;
     } catch (error) {
       console.error('API Error:', error);
