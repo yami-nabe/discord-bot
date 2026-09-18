@@ -365,23 +365,32 @@ client.on('messageCreate', async (message) => {
   const personaRequest = matchPersonaRequest(message.content);
   if (personaRequest) {
     try {
+      if (!personaRequest.persona) {
+        await message.reply(`해당 이름 ${personaRequest.name}은 존재하지 않는 페르소나입니다.`);
+        return;
+      }
+
       await message.react('✅');
       const { persona, userRequest } = personaRequest;
-      // 질문을 로그에 추가하기 전 문맥을 보존해 기존 프롬프트 동작을 유지한다.
+      // 실패한 질답은 저장하지 않고, 응답 전송까지 성공한 뒤 로그에 추가한다.
       const contextLogText = logToText(message.channelId);
+      const requestTimestamp = Date.now();
+      const text = await requestReply(
+        message.channelId,
+        userRequest,
+        { persona, contextLogText }
+      );
+      // 로그와 캐시는 본문을 유지하고, 디스코드 출력에만 캐릭터 헤더를 붙입니다.
+      await sendLongMessage(message, `## ${persona.emoji} **${persona.name}**\n\n${text}`);
+
       log.add({
-        timestamp: Date.now(),
+        timestamp: requestTimestamp,
         content: message.content,
         author: message.author.id,
         source: 'persona',
         personaId: persona.id,
       });
 
-      const text = await requestReply(
-        message.channelId,
-        userRequest,
-        { persona, contextLogText }
-      );
       log.add({
         timestamp: Date.now(),
         content: text,
@@ -390,8 +399,6 @@ client.on('messageCreate', async (message) => {
         personaId: persona.id,
         personaName: persona.name,
       });
-      // 로그와 캐시는 본문을 유지하고, 디스코드 출력에만 캐릭터 헤더를 붙입니다.
-      await sendLongMessage(message, `## ${persona.emoji} **${persona.name}**\n\n${text}`);
       return;
     } catch (error) {
       console.error('API Error:', error);

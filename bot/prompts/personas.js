@@ -45,38 +45,22 @@ const PERSONAS = [
 
 const DEFAULT_PERSONA = PERSONAS.find((persona) => persona.id === 'anca');
 
-function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/** 먼저 등장한 등록 이름 하나를 선택하고, 해당 호출만 요청 본문에서 제거합니다. */
+/** 메시지 맨 앞의 @이름을 추출합니다. 미등록 이름은 persona가 null입니다. */
 function matchPersonaRequest(content, personas = PERSONAS) {
-  let selected = null;
+  const match = /^@[^\s]+/.exec(content);
+  if (!match) return null;
 
-  for (const persona of personas) {
-    for (const name of [persona.name, ...(persona.aliases || [])]) {
-      // 이메일·긴 이름의 일부를 호출로 해석하지 않습니다. 문장부호는 허용합니다.
-      const pattern = new RegExp(
-        `(^|[^\\p{L}\\p{N}_@])@${escapeRegExp(name)}(?![\\p{L}\\p{N}_])`,
-        'iu'
-      );
-      const match = pattern.exec(content);
-      if (!match) continue;
+  const name = match[0].slice(1);
+  const persona = personas.find((candidate) =>
+    [candidate.name, ...(candidate.aliases || [])].some(
+      (registeredName) => registeredName.toLowerCase() === name.toLowerCase()
+    )
+  ) || null;
 
-      const index = match.index + match[1].length;
-      const length = match[0].length - match[1].length;
-      if (!selected || index < selected.index ||
-          (index === selected.index && length > selected.length)) {
-        selected = { persona, index, length };
-      }
-    }
-  }
-
-  if (!selected) return null;
-  const { persona, index, length } = selected;
   return {
     persona,
-    userRequest: (content.slice(0, index) + content.slice(index + length)).trim(),
+    name,
+    userRequest: content.slice(match[0].length).trim(),
   };
 }
 

@@ -7,6 +7,30 @@ const SNACK_API_KEY = process.env.SNACK_API_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
 const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+const MAX_REQUEST_RETRIES = 3;
+
+// 최초 요청 이후 최대 3번 재시도하며, 재시도 사이에 1초, 2초, 3초 대기합니다.
+async function withRequestRetry(request, apiName) {
+    for (let retryCount = 0; retryCount <= MAX_REQUEST_RETRIES; retryCount++) {
+        try {
+            return await request();
+        } catch (error) {
+            if (retryCount === MAX_REQUEST_RETRIES) throw error;
+
+            const delayMs = (retryCount + 1) * 1000;
+            console.warn(`${apiName} 요청 재시도 ${retryCount + 1}/${MAX_REQUEST_RETRIES} (${delayMs}ms 후)`);
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+    }
+}
+
+function extractReplyText(result) {
+    const text = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (typeof text !== 'string' || !text.trim()) {
+        throw new Error('응답을 받지 못했습니다.');
+    }
+    return text;
+}
 
 // HarmCategory와 HarmBlockThreshold 상수 정의
 const HarmCategory = {
@@ -53,37 +77,38 @@ const defaultGenerationConfig = {
  * @returns {Promise<string>} AI 응답 텍스트
  */
 async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEFAULT_GEMINI_MODEL) {
-    try {
-        // 액세스 토큰 가져오기
-        const token = await getAccessToken(VERTEX_JSON.client_email, VERTEX_JSON.private_key);
+    return withRequestRetry(async () => {
+        try {
+            // 액세스 토큰 가져오기
+            const token = await getAccessToken(VERTEX_JSON.client_email, VERTEX_JSON.private_key);
 
-        // 기본 설정과 사용자 설정 병합
-        const config = { ...defaultGenerationConfig, ...generationConfig };
+            // 기본 설정과 사용자 설정 병합
+            const config = { ...defaultGenerationConfig, ...generationConfig };
 
-        // Vertex AI에 POST 리퀘스트 보내기
-        const result = await axios.post(
-            `https://aiplatform.googleapis.com/v1/projects/${VERTEX_JSON.project_id}/locations/global/publishers/google/models/${model}:generateContent`,
-            {
-                contents: chatHistory,
-                generationConfig: config,
-                safetySettings: defaultSafetySettings,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
+            // Vertex AI에 POST 리퀘스트 보내기
+            const result = await axios.post(
+                `https://aiplatform.googleapis.com/v1/projects/${VERTEX_JSON.project_id}/locations/global/publishers/google/models/${model}:generateContent`,
+                {
+                    contents: chatHistory,
+                    generationConfig: config,
+                    safetySettings: defaultSafetySettings,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
                 }
-            }
-        );
+            );
 
-        // 응답 데이터 구조에 맞게 텍스트 추출
-        const reply = result.data;
-        return reply?.candidates?.[0]?.content?.parts?.[0]?.text || "응답을 받지 못했습니다.";
+            // 응답 데이터 구조에 맞게 텍스트 추출
+            return extractReplyText(result);
 
-    } catch (error) {
-        console.error("Vertex AI 요청 중 오류 발생:", error.response ? error.response.data : error.message);
-        throw new Error(`Vertex AI 요청 실패: ${error.message}`);
-    }
+        } catch (error) {
+            console.error("Vertex AI 요청 중 오류 발생:", error.response ? error.response.data : error.message);
+            throw new Error(`Vertex AI 요청 실패: ${error.message}`);
+        }
+    }, 'Vertex AI');
 }
 
 /**
@@ -93,41 +118,42 @@ async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEF
  * @returns {Promise<string>} AI 응답 텍스트
  */
 async function sendGeminiRequest(chatHistory, generationConfig = {}) {
-    try {
-        // 기본 설정과 사용자 설정 병합
-        const config = { ...defaultGenerationConfig, ...generationConfig };
+    return withRequestRetry(async () => {
+        try {
+            // 기본 설정과 사용자 설정 병합
+            const config = { ...defaultGenerationConfig, ...generationConfig };
 
-        // Taiyaki AI 프록시에 POST 요청 보내기
-        const result = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                contents: chatHistory,
-                generationConfig: config,
-                safetySettings: defaultSafetySettings,
-            },
-            {
-                headers: {
-                    "Content-Type": "application/json"
+            // Taiyaki AI 프록시에 POST 요청 보내기
+            const result = await axios.post(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_API_KEY}`,
+                {
+                    contents: chatHistory,
+                    generationConfig: config,
+                    safetySettings: defaultSafetySettings,
                 },
-                timeout: 180000 // 180초 타임아웃
-            }
-        );
-
-        // 응답 데이터 구조에 맞게 텍스트 추출
-        const reply = result.data;
-        return reply?.candidates?.[0]?.content?.parts?.[0]?.text || "응답을 받지 못했습니다.";
-
-    } catch (error) {
-        if (error.response) {
-            console.error(
-              'Gemini AI 요청 중 오류 발생:',
-              JSON.stringify(error.response.data, null, 2)
+                {
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    timeout: 180000 // 180초 타임아웃
+                }
             );
-        } else {
-            console.error('Gemini AI 요청 중 오류 발생:', error.message);
+
+            // 응답 데이터 구조에 맞게 텍스트 추출
+            return extractReplyText(result);
+
+        } catch (error) {
+            if (error.response) {
+                console.error(
+                  'Gemini AI 요청 중 오류 발생:',
+                  JSON.stringify(error.response.data, null, 2)
+                );
+            } else {
+                console.error('Gemini AI 요청 중 오류 발생:', error.message);
+            }
+            throw new Error(`Gemini AI 요청 실패: ${error.message}`);
         }
-        throw new Error(`Gemini AI 요청 실패: ${error.message}`);
-    }
+    }, 'Gemini AI');
 }
 
 /**
@@ -158,4 +184,4 @@ module.exports = {
     sendAIRequest,
     defaultSafetySettings,
     defaultGenerationConfig
-}; 
+};
