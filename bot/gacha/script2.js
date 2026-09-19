@@ -1,67 +1,70 @@
-const fs = require('fs');
 const path = require('path');
-const { updateUser } = require('./gacha-user');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v10');
 
-// 모든 유저에게 확정 5성 가챠권 1개를 즉시 지급하는 함수
-async function giveGuaranteedFiveStarTicketToAllUsers() {
-    const usersDir = path.join(__dirname, 'users');
-
-    // users 디렉토리가 존재하는지 확인
-    if (!fs.existsSync(usersDir)) {
-        console.log('users 디렉토리가 존재하지 않습니다.');
-        return;
+// 해당 봇의 글로벌 및 참여 중인 모든 서버의 명령을 삭제합니다.
+// 슬래시 명령뿐 아니라 사용자/메시지 우클릭 명령도 포함합니다.
+async function deleteAllCommands(rest, applicationId) {
+    const application = await rest.get(Routes.oauth2CurrentApplication());
+    if (application.id !== applicationId) {
+        throw new Error('토큰의 애플리케이션 ID와 SUPA_CLIENT_ID가 일치하지 않습니다.');
     }
 
-    // 모든 유저 파일 읽기
-    const userFiles = fs.readdirSync(usersDir).filter(file => file.endsWith('.json'));
-
-    if (userFiles.length === 0) {
-        console.log('유저 파일이 없습니다.');
-        return;
+    // 서버가 200개 이상인 경우에도 전체 목록을 가져옵니다.
+    const guilds = [];
+    let after;
+    while (true) {
+        const query = new URLSearchParams({ limit: '200' });
+        if (after) query.set('after', after);
+        const page = await rest.get(Routes.userGuilds(), { query });
+        guilds.push(...page);
+        if (page.length < 200) break;
+        after = page[page.length - 1].id;
     }
 
-    console.log(`총 ${userFiles.length}명의 유저에게 확정 5성 가챠권 1개를 지급합니다...`);
+    const targets = [
+        { name: '글로벌', route: Routes.applicationCommands(applicationId) },
+        ...guilds.map((guild) => ({
+            name: `${guild.name} (${guild.id})`,
+            route: Routes.applicationGuildCommands(applicationId, guild.id),
+        })),
+    ];
 
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (const userFile of userFiles) {
+    let failedCount = 0;
+    for (const target of targets) {
         try {
-            const userId = userFile.replace('.json', '');
-
-            await updateUser(userId, user => {
-                if (user.todayGuaranteedFiveStarCount === undefined) user.todayGuaranteedFiveStarCount = 0;
-                user.todayGuaranteedFiveStarCount += 1;
-                console.log(`유저 ${userId}: 확정 5성 가챠권 1개 지급 완료 (총 ${user.todayGuaranteedFiveStarCount}개)`);
-            });
-
-            successCount++;
+            await rest.put(target.route, { body: [] });
+            console.log(`${target.name}: 모든 명령 삭제 완료`);
         } catch (error) {
-            console.error(`유저 ${userFile} 처리 중 오류 발생:`, error.message);
-            errorCount++;
+            failedCount++;
+            console.error(`${target.name}: 삭제 실패 - ${error.message}`);
         }
     }
 
-    console.log('\n=== 지급 완료 ===');
-    console.log(`성공: ${successCount}명`);
-    console.log(`실패: ${errorCount}명`);
-    console.log(`총 처리: ${successCount + errorCount}명`);
-}
-
-// 스크립트 실행
-async function main() {
-    console.log('모든 유저에게 확정 5성 가챠권 1개를 지급합니다...');
-
-    try {
-        await giveGuaranteedFiveStarTicketToAllUsers();
-        console.log('\n스크립트가 성공적으로 완료되었습니다!');
-    } catch (error) {
-        console.error('스크립트 실행 중 오류 발생:', error);
-        process.exit(1);
+    console.log(`처리 완료: 성공 ${targets.length - failedCount}곳, 실패 ${failedCount}곳`);
+    if (failedCount > 0) {
+        throw new Error(`${failedCount}곳의 명령을 삭제하지 못했습니다. 위 오류를 확인해주세요.`);
     }
 }
 
-// 스크립트가 직접 실행될 때만 main 함수 호출
-if (require.main === module) {
-    main();
+async function main() {
+    require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+    const token = process.env.SUPA_TOKEN || process.env.SUPATOKEN;
+    const applicationId = process.env.SUPA_CLIENT_ID;
+    if (!token || !applicationId) {
+        throw new Error('.env에 SUPA_TOKEN(또는 SUPATOKEN)과 SUPA_CLIENT_ID를 설정해주세요.');
+    }
+
+    const rest = new REST({ version: '10' }).setToken(token);
+    await deleteAllCommands(rest, applicationId);
 }
+
+// 다른 파일에서 불러오는 것만으로는 삭제하지 않습니다.
+if (require.main === module) {
+    main().catch((error) => {
+        console.error('명령 삭제 실패:', error.message);
+        process.exitCode = 1;
+    });
+}
+
+module.exports = { deleteAllCommands };

@@ -12,7 +12,7 @@ const {
 
 const { sendLongMessage } = require('../utils/functions');
 const { sendVertexRequest } = require('../utils/geminiRequest');
-const { DEFAULT_PERSONA, matchPersonaRequest } = require('./prompts/personas');
+const { PERSONAS, DEFAULT_PERSONA, matchPersonaRequest } = require('./prompts/personas');
 const {
   handleGachaCommand,
   getGachaInfo,
@@ -239,6 +239,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       content: '이 명령어는 지정된 채널에서만 사용 가능합니다.',
       flags: MessageFlags.Ephemeral,
     });
+    return;
+  }
+
+  if (interaction.commandName === 'persona') {
+    const personaList = PERSONAS
+      .map((persona) => `- ${persona.emoji} **${persona.name}**`)
+      .join('\n');
+    await interaction.reply({ content: `## 호출 가능 봇 목록\n\n${personaList}` });
     return;
   }
 

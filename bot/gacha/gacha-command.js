@@ -5,6 +5,9 @@ require('dotenv').config();
 
 const commands = [
     new SlashCommandBuilder()
+        .setName('persona')
+        .setDescription('호출 가능한 페르소나 목록 확인'),
+    new SlashCommandBuilder()
         .setName('gacha')
         .setDescription('오늘의 가챠 돌리기'),
     new SlashCommandBuilder()
