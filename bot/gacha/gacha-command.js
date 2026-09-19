@@ -1,7 +1,8 @@
+const path = require('path');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const commands = [
     new SlashCommandBuilder()
@@ -31,19 +32,25 @@ const commands = [
         .setDescription('전체 가챠 통계 확인'),
 ].map(command => command.toJSON());
 
-const rest = new REST({ version: '10' }).setToken(process.env.SUPATOKEN);
-
 (async () => {
     try {
+        const token = process.env.SUPA_TOKEN || process.env.SUPATOKEN;
+        const applicationId = process.env.SUPA_CLIENT_ID;
+        if (!token || !applicationId) {
+            throw new Error('.env에 SUPA_TOKEN(또는 SUPATOKEN)과 SUPA_CLIENT_ID를 설정해주세요.');
+        }
+
+        const rest = new REST({ version: '10' }).setToken(token);
         console.log('Started refreshing application (/) commands.');
 
         await rest.put(
-            Routes.applicationCommands(process.env.SUPA_CLIENT_ID),
+            Routes.applicationCommands(applicationId),
             { body: commands },
         );
 
         console.log('Successfully reloaded application (/) commands.');
     } catch (error) {
-        console.error('Error registering commands:', error);
+        console.error('Error registering commands:', error.message);
+        process.exitCode = 1;
     }
 })();
