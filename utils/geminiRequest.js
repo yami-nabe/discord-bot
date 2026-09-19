@@ -66,7 +66,7 @@ const defaultSafetySettings = [
 
 // 기본 생성 설정
 const defaultGenerationConfig = {
-    maxOutputTokens: 9000,
+    maxOutputTokens: 20000,
     temperature: 0.7,
 };
 
