@@ -74,9 +74,11 @@ const defaultGenerationConfig = {
  * Vertex AI에 요청을 보내는 범용 함수
  * @param {Array} chatHistory - 채팅 히스토리 배열 (role과 parts를 포함한 객체들)
  * @param {Object} generationConfig - 생성 설정 (maxOutputTokens, temperature 등)
+ * @param {string} model - 사용할 Gemini 모델
+ * @param {Object} [systemInstruction] - 시스템 프롬프트 ({ parts: [{ text }] })
  * @returns {Promise<string>} AI 응답 텍스트
  */
-async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEFAULT_GEMINI_MODEL) {
+async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEFAULT_GEMINI_MODEL, systemInstruction) {
     return withRequestRetry(async () => {
         try {
             // 액세스 토큰 가져오기
@@ -90,6 +92,7 @@ async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEF
                 `https://aiplatform.googleapis.com/v1/projects/${VERTEX_JSON.project_id}/locations/global/publishers/google/models/${model}:generateContent`,
                 {
                     contents: chatHistory,
+                    ...(systemInstruction ? { systemInstruction } : {}),
                     generationConfig: config,
                     safetySettings: defaultSafetySettings,
                 },

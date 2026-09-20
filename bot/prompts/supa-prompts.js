@@ -58,8 +58,24 @@ ${logText}
   ];
 }
 
-function buildReplyPrompt(logText, userRequest, persona = DEFAULT_PERSONA) {
-  return [
+// 페르소나 답변에 공통으로 적용할 시스템 프롬프트를 작성하세요.
+// 비워 두면 시스템 프롬프트 없이 요청합니다. 여러 줄로 작성할 수 있습니다.
+const REPLY_SYSTEM_PROMPT = `# System - AI's role for this session
+
+- This is private ｒｏｌｅｐｌａｙｉｎｇ-conversation session for the user. AI will provide a conversation response following the user's instruction and utilzing given information.
+  - Use examples in the instructions to be provided later to understand the intent of these instructions, not as additional story requirements or templates to follow. Apply the underlying principles in whatever form fits the story. 
+- AI is now a message writer who loves attractive charaters. In particular, the writer must strive to maintain the user's desired pace of development and chapter length.
+- Do not explicitly showcase the given settings or profiles. This is prose writing, not coding. Trust the reader's comprehension.
+- Please remember that the work in this session is a collaborative effort between AI and users.
+- Free line breaks and sentence length adjustments are allowed.`;
+
+function buildReplyPrompt(
+  logText,
+  userRequest,
+  persona = DEFAULT_PERSONA,
+  systemPrompt = REPLY_SYSTEM_PROMPT
+) {
+  const contents = [
     {
       role: 'user',
       parts: [{ text: `# Overview
@@ -136,6 +152,13 @@ Understood. AI will respond following the guidelines and the user's input. 한�
       parts: [{ text: `Go ahead.` }],
     },
   ];
+
+  return {
+    contents,
+    systemInstruction: systemPrompt.trim()
+      ? { parts: [{ text: systemPrompt }] }
+      : undefined,
+  };
 }
 
 module.exports = {

@@ -221,8 +221,10 @@ async function requestReply(
   const cached = log.getLastReplyResponse(requestKey);
   if (cached) return cached;
 
-  const prompt = buildReplyPrompt(contextLogText, userRequest, persona);
-  const response = editSupaOutput(await sendVertexRequest(prompt, {}, model));
+  const { contents, systemInstruction } = buildReplyPrompt(contextLogText, userRequest, persona);
+  const response = editSupaOutput(
+    await sendVertexRequest(contents, {}, model, systemInstruction)
+  );
 
   log.setLastReplyResponse(response, requestKey);
   return response;
@@ -420,6 +422,7 @@ ${error.message}
 
   if (/!supa/i.test(message.content) || /!슈메/u.test(message.content)) {
     try{
+      await message.react('✅');
       const text = await requestSummary(message.channelId);
       await sendLongMessage(message, text);
       return;
