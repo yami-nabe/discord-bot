@@ -7,6 +7,8 @@ const path = require('path');
 const fs = require('fs');
 const { getEventSpecialGachaCount } = require('./event');
 const BONUS_GACHA_TICKET_RATE = 0.15;
+const FULL_BREAKTHROUGH_COUNT = 7; // 명함 1개 + 6돌파
+const FULL_BREAKTHROUGH_DUPLICATE_DUST = 1000;
 
 // const ADMIN_USER_ID = '309989582240219137';
 
@@ -19,30 +21,6 @@ function getCurrentKRDate() {
     const month = String(krTime.getMonth() + 1).padStart(2, '0');
     const day = String(krTime.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-}
-
-// 5성 캐릭터 통계 업데이트
-function updateFiveStarStats(userId, fiveStarCharacters) {
-    updateUser(userId, user => {
-        if (!user.fiveStarStats) user.fiveStarStats = {};
-        fiveStarCharacters.forEach(character => {
-            const characterName = character.name;
-            if (!user.fiveStarStats[characterName]) user.fiveStarStats[characterName] = 0;
-            user.fiveStarStats[characterName]++;
-        });
-    });
-}
-
-// 6성 캐릭터 통계 업데이트
-function updateSixStarStats(userId, sixStarCharacters) {
-    updateUser(userId, user => {
-        if (!user.sixStarStats) user.sixStarStats = {};
-        sixStarCharacters.forEach(character => {
-            const characterName = character.name;
-            if (!user.sixStarStats[characterName]) user.sixStarStats[characterName] = 0;
-            user.sixStarStats[characterName]++;
-        });
-    });
 }
 
 // 날짜가 바뀔 때 유저의 일일 가챠권/특별 가챠권을 초기화 및 지급/폐기하는 함수
@@ -185,11 +163,6 @@ async function handleGachaCommand(userId, channelId) {
     const fiveStarChars = gachaData.characters.filter((char, idx) => gachaData.results[idx] === 5);
     const sixStarChars = gachaData.characters.filter((char, idx) => gachaData.results[idx] === 6);
     
-    // 6성 통계 업데이트
-    if (sixStarChars.length > 0) {
-        updateSixStarStats(userId, sixStarChars);
-    }
-    
     // 레몬빛 가루 지급 (등급별 지급량: 3성=1, 4성=10, 5성=50, 6성=150)
     const lemonDustRewards = {
         3: 1,
@@ -198,21 +171,42 @@ async function handleGachaCommand(userId, channelId) {
         6: 150
     };
     let totalLemonDust = 0;
-    gachaData.results.forEach(rarity => {
-        totalLemonDust += lemonDustRewards[rarity] || 0;
-    });
-    let currentLemonDust = userAfter.lemonDust || 0;
-    if (totalLemonDust > 0) {
-        const rewardedUser = await updateUser(userId, user => {
-            if (user.lemonDust === undefined) user.lemonDust = 0;
-            user.lemonDust += totalLemonDust;
+    let duplicateLemonDust = 0;
+    const fullBreakthroughDuplicates = new Map();
+    // 획득 수와 가루를 함께 저장해, 같은 10연차 안의 중복도 순서대로 계산합니다.
+    const rewardedUser = await updateUser(userId, user => {
+        if (!user.fiveStarStats) user.fiveStarStats = {};
+        if (!user.sixStarStats) user.sixStarStats = {};
+        gachaData.results.forEach((rarity, index) => {
+            totalLemonDust += lemonDustRewards[rarity] || 0;
+            if (rarity !== 5 && rarity !== 6) return;
+
+            const character = gachaData.characters[index];
+            const stats = rarity === 5 ? user.fiveStarStats : user.sixStarStats;
+            const previousCount = stats[character.name] || 0;
+            if (previousCount >= FULL_BREAKTHROUGH_COUNT) {
+                duplicateLemonDust += FULL_BREAKTHROUGH_DUPLICATE_DUST;
+                const key = `${rarity}:${character.name}`;
+                const duplicate = fullBreakthroughDuplicates.get(key) || { character, count: 0 };
+                duplicate.count++;
+                fullBreakthroughDuplicates.set(key, duplicate);
+            }
+            stats[character.name] = previousCount + 1;
         });
-        currentLemonDust = rewardedUser.lemonDust;
+        totalLemonDust += duplicateLemonDust;
+        user.lemonDust = (user.lemonDust || 0) + totalLemonDust;
+    });
+    const currentLemonDust = rewardedUser.lemonDust;
+    let lemonDustMessage = `이번 획득: **${totalLemonDust.toLocaleString('ko-KR')}개** · 현재 보유: **${currentLemonDust.toLocaleString('ko-KR')}개**`;
+    if (duplicateLemonDust > 0) {
+        const duplicateCharacters = [...fullBreakthroughDuplicates.values()]
+            .map(({ character, count }) => `${character.emoji} **${character.name}** ×${count}`)
+            .join(', ');
+        lemonDustMessage += `\n♻️ **풀 돌파 중복 보상!** ${duplicateCharacters}\n중복 1회당 레몬빛 가루 1,000개, 총 **${duplicateLemonDust.toLocaleString('ko-KR')}개** 추가 지급! (이번 획득량에 포함)`;
     }
-    const lemonDustMessage = `이번 획득: **${totalLemonDust.toLocaleString('ko-KR')}개** · 현재 보유: **${currentLemonDust.toLocaleString('ko-KR')}개**`;
     
-    const formattedResults = formatGachaResults(gachaData, userId, updateFiveStarStats);
-    const detailed = formatGachaResultsDetailed(gachaData, userId, updateFiveStarStats);
+    const formattedResults = formatGachaResults(gachaData);
+    const detailed = formatGachaResultsDetailed(gachaData);
     
     // 5성/6성 축하 채널용 캐릭터 목록 (이모지 + 이름 + 등급)
     const celebrationChars = [
@@ -377,7 +371,9 @@ async function getMyGachaInfo(userId) {
         
         if (totalFiveStar > 0) {
             result += '## 보유한 5성 캐릭터:\n';
-            for (const [characterName, count] of Object.entries(fiveStarStats)) {
+            const sortedFiveStarStats = Object.entries(fiveStarStats)
+                .sort(([, countA], [, countB]) => countB - countA);
+            for (const [characterName, count] of sortedFiveStarStats) {
                 // 5성, 픽업, others를 포함한 모든 캐릭터에서 이모지 찾기 (컬렉션용)
                 const allCharacters = getAllCharactersForCollection();
                 const character = allCharacters.find(char => char.name === characterName);
