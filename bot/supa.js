@@ -22,6 +22,7 @@ const {
   getGachaStatsCommand,
 } = require('./gacha/gacha-function');
 const { getUser } = require('./gacha/gacha-user');
+const { hasBatchim } = require('./gacha/gacha-format');
 const {
   buildSummaryPrompt,
   buildReplyPrompt,
@@ -376,7 +377,8 @@ client.on('messageCreate', async (message) => {
   if (personaRequest) {
     try {
       if (!personaRequest.persona) {
-        await message.reply(`해당 이름 ${personaRequest.name}은 존재하지 않는 페르소나입니다.`);
+        const particle = hasBatchim(personaRequest.name.slice(-1)) ? '은' : '는';
+        await message.reply(`해당 이름 ${personaRequest.name}${particle} 존재하지 않는 페르소나입니다.`);
         return;
       }
 

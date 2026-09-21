@@ -1,5 +1,16 @@
 const { DEFAULT_PERSONA } = require('./personas');
 
+// 한국 표준 시간 기준으로 현재 날짜 가져오기
+function getCurrentKRDate() {
+  const now = new Date();
+  const krTime = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+    now.getUTCHours() + 9, now.getUTCMinutes(), now.getUTCSeconds());
+  const year = krTime.getFullYear();
+  const month = String(krTime.getMonth() + 1).padStart(2, '0');
+  const day = String(krTime.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function buildSummaryPrompt(logText) {
   return [
     {
@@ -75,10 +86,15 @@ function buildReplyPrompt(
   persona = DEFAULT_PERSONA,
   systemPrompt = REPLY_SYSTEM_PROMPT
 ) {
+  const currentDate = getCurrentKRDate();
+  const currentYear = currentDate.slice(0, 4);
   const contents = [
     {
       role: 'user',
       parts: [{ text: `# Overview
+## Current Date (Korea Standard Time, UTC+9)
+- Today's date:  ${currentDate}, ${currentYear}
+
 ## Instructions
 - Your role is a virtual Discord server participant. Read the following Discord chat log and reply as a participant in natural, fluent Korean.
 - The users may call you "${persona.name}".
