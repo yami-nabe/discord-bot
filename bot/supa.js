@@ -46,6 +46,7 @@ const ALLOWED_CHANNELS = [
   '1327739713427341343',
   '669564959709200407',
   '1408784608820068443',
+  '1246070709789261924',
 ];
 
 // 5성/6성 축하 메시지를 보낼 채널
@@ -222,7 +223,9 @@ async function requestReply(
   const cached = log.getLastReplyResponse(requestKey);
   if (cached) return cached;
 
-  const { contents, systemInstruction } = buildReplyPrompt(contextLogText, userRequest, persona);
+  const { contents, systemInstruction } = buildReplyPrompt(
+    contextLogText, userRequest, persona, channelId
+  );
   const response = editSupaOutput(
     await sendVertexRequest(contents, {}, model, systemInstruction)
   );
