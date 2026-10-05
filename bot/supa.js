@@ -74,6 +74,7 @@ function formatTimestamp(timestamp) {
 class TimedLog {
   constructor() {
     this.log = [];
+    this.generation = 0;
     this.lastCleanup = Date.now();
     this.lastResponse = null;
     this.lastResponseTime = 0;
@@ -145,9 +146,9 @@ class TimedLog {
   }
 
   clearPersonaLogs() {
-    this.log = this.log.filter(
-      (entry) => entry.source !== 'persona'
-    );
+    this.log = this.log.filter((entry) => entry.source !== 'persona');
+    // 초기화 전에 시작한 비동기 요청이 기록과 캐시를 다시 채우지 못하게 합니다.
+    this.generation++;
     this.lastResponse = null;
     this.lastResponseTime = 0;
     this.lastResponseModel = '';
@@ -196,6 +197,7 @@ function editSupaOutput(text) {
 async function requestSummary(channelId, model = DEFAULT_GEMINI_MODEL) {
   const log = channelLogs.get(channelId);
   if (!log) return null;
+  const generation = log.generation;
 
   const cached = log.getLastResponse(model);
   if (cached) return cached;
@@ -203,6 +205,7 @@ async function requestSummary(channelId, model = DEFAULT_GEMINI_MODEL) {
   const prompt = buildSummaryPrompt(logToText(channelId));
   const response = await sendVertexRequest(prompt, {}, model);
 
+  if (log.generation !== generation) return null;
   log.setLastResponse(response, model);
   return editSupaOutput(response);
 }
@@ -218,6 +221,7 @@ async function requestReply(
 ) {
   const log = channelLogs.get(channelId);
   if (!log) return null;
+  const generation = log.generation;
 
   const requestKey = JSON.stringify([persona.id, model, userRequest]);
   const cached = log.getLastReplyResponse(requestKey);
@@ -230,6 +234,7 @@ async function requestReply(
     await sendVertexRequest(contents, {}, model, systemInstruction)
   );
 
+  if (log.generation !== generation) return null;
   log.setLastReplyResponse(response, requestKey);
   return response;
 }
@@ -357,6 +362,7 @@ client.on('messageCreate', async (message) => {
     channelLogs.set(message.channelId, new TimedLog());
 
   const log = channelLogs.get(message.channelId);
+  const generation = log.generation;
 
   if (/!logcheck/i.test(message.content)) {
     if(message.author.id !== '309989582240219137') return;
@@ -364,9 +370,9 @@ client.on('messageCreate', async (message) => {
     return;
   }
 
-  if (/^!clear\s*$/i.test(message.content)) {
+  if (/^\s*!clear\s*$/i.test(message.content)) {
     log.clearPersonaLogs();
-    await message.reply('모든 페르소나의 질답 기록이 초기화되었습니다.');
+    await message.reply('이 채널의 모든 페르소나 질답 기록과 응답 캐시가 초기화되었습니다. 일반 대화 기록은 유지됩니다.');
     return;
   }
 
@@ -378,6 +384,7 @@ client.on('messageCreate', async (message) => {
 
   const personaRequest = matchPersonaRequest(message.content);
   if (personaRequest) {
+    if (log.generation !== generation) return;
     try {
       if (!personaRequest.persona) {
         const particle = hasBatchim(personaRequest.name.slice(-1)) ? '은' : '는';
@@ -386,6 +393,7 @@ client.on('messageCreate', async (message) => {
       }
 
       await message.react('✅');
+      if (log.generation !== generation) return;
       const { persona, userRequest } = personaRequest;
       // 실패한 질답은 저장하지 않고, 응답 전송까지 성공한 뒤 로그에 추가한다.
       const contextLogText = logToText(message.channelId);
@@ -395,8 +403,10 @@ client.on('messageCreate', async (message) => {
         userRequest,
         { persona, contextLogText }
       );
+      if (log.generation !== generation || text === null) return;
       // 로그와 캐시는 본문을 유지하고, 디스코드 출력에만 캐릭터 헤더를 붙입니다.
       await sendLongMessage(message, `## ${persona.emoji} **${persona.name}**\n\n${text}`);
+      if (log.generation !== generation) return;
 
       log.add({
         timestamp: requestTimestamp,
@@ -416,6 +426,7 @@ client.on('messageCreate', async (message) => {
       });
       return;
     } catch (error) {
+      if (log.generation !== generation) return;
       console.error('API Error:', error);
       await message.reply(`에러 발생:
 \`\`\`
@@ -426,12 +437,16 @@ ${error.message}
   }
 
   if (/!supa/i.test(message.content) || /!슈메/u.test(message.content)) {
+    if (log.generation !== generation) return;
     try{
       await message.react('✅');
+      if (log.generation !== generation) return;
       const text = await requestSummary(message.channelId);
+      if (log.generation !== generation || text === null) return;
       await sendLongMessage(message, text);
       return;
     } catch (error) {
+      if (log.generation !== generation) return;
       console.error('API Error:', error);
       await message.reply(`에러 발생:
 \`\`\`
