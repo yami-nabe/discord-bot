@@ -16,6 +16,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # 런타임 데이터
+/data/supa-search-quota.json*
 pids
 *.pid
 *.seed
@@ -43,4 +44,4 @@ build/
 
 # OS 파일
 .DS_Store
-Thumbs.db 
+Thumbs.db

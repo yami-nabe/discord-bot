@@ -12,6 +12,7 @@ const {
 
 const { sendLongMessage } = require('../utils/functions');
 const { sendVertexRequest } = require('../utils/geminiRequest');
+const { searchQuota, parseSearchRequest, formatSearchSources } = require('../utils/supaSearch');
 const { PERSONAS, DEFAULT_PERSONA, matchPersonaRequest } = require('./prompts/personas');
 const {
   handleGachaCommand,
@@ -26,6 +27,8 @@ const { hasBatchim } = require('./gacha/gacha-format');
 const {
   buildSummaryPrompt,
   buildReplyPrompt,
+  buildSearchPrompt,
+  buildSearchContext,
 } = require('./prompts/supa-prompts');
 
 // ───────────────────────────────────────────────
@@ -217,6 +220,7 @@ async function requestReply(
     persona = DEFAULT_PERSONA,
     model = DEFAULT_GEMINI_MODEL,
     contextLogText = logToText(channelId),
+    searchQuery = null,
   } = {}
 ) {
   const log = channelLogs.get(channelId);
@@ -224,19 +228,37 @@ async function requestReply(
   const generation = log.generation;
 
   const requestKey = JSON.stringify([persona.id, model, userRequest]);
-  const cached = log.getLastReplyResponse(requestKey);
+  const cached = searchQuery === null ? log.getLastReplyResponse(requestKey) : null;
   if (cached) return cached;
 
   const { contents, systemInstruction } = buildReplyPrompt(
     contextLogText, userRequest, persona, channelId
   );
+  let searchResult;
+  if (searchQuery !== null) {
+    const searchPrompt = buildSearchPrompt(searchQuery);
+    searchQuota.consume();
+    searchResult = await sendVertexRequest(
+      searchPrompt.contents, {}, model, searchPrompt.systemInstruction, { googleSearch: true }
+    );
+    if (log.generation !== generation) return null;
+    contents.push({ role: 'user', parts: [{ text: buildSearchContext(searchQuery, searchResult) }] });
+  }
   const response = editSupaOutput(
     await sendVertexRequest(contents, {}, model, systemInstruction)
   );
 
   if (log.generation !== generation) return null;
-  log.setLastReplyResponse(response, requestKey);
-  return response;
+  if (searchQuery === null) log.setLastReplyResponse(response, requestKey);
+  return response + (searchResult ? formatSearchSources(searchResult.sources) : '');
+}
+
+function getSearchFooter() {
+  try {
+    return `\n\n🔎 오늘 남은 검색: ${searchQuota.getStatus().remaining}/200회 · 매일 00:00 KST 초기화`;
+  } catch {
+    return '\n\n🔎 오늘 남은 검색: 확인 불가 (횟수 파일 확인 필요)';
+  }
 }
 
 // ───────────────────────────────────────────────
@@ -385,6 +407,7 @@ client.on('messageCreate', async (message) => {
   const personaRequest = matchPersonaRequest(message.content);
   if (personaRequest) {
     if (log.generation !== generation) return;
+    let searchRequested = false;
     try {
       if (!personaRequest.persona) {
         const particle = hasBatchim(personaRequest.name.slice(-1)) ? '은' : '는';
@@ -392,20 +415,28 @@ client.on('messageCreate', async (message) => {
         return;
       }
 
+      const { userRequest, searchQuery } = parseSearchRequest(personaRequest.userRequest);
+      searchRequested = searchQuery !== null;
+      if (searchRequested && !searchQuery) {
+        await message.reply('검색할 내용을 --search 뒤에 입력해 주세요.' + getSearchFooter());
+        return;
+      }
+
       await message.react('✅');
       if (log.generation !== generation) return;
-      const { persona, userRequest } = personaRequest;
+      const { persona } = personaRequest;
       // 실패한 질답은 저장하지 않고, 응답 전송까지 성공한 뒤 로그에 추가한다.
       const contextLogText = logToText(message.channelId);
       const requestTimestamp = Date.now();
       const text = await requestReply(
         message.channelId,
         userRequest,
-        { persona, contextLogText }
+        { persona, contextLogText, searchQuery }
       );
       if (log.generation !== generation || text === null) return;
       // 로그와 캐시는 본문을 유지하고, 디스코드 출력에만 캐릭터 헤더를 붙입니다.
-      await sendLongMessage(message, `## ${persona.emoji} **${persona.name}**\n\n${text}`);
+      const footer = searchRequested ? getSearchFooter() : '';
+      await sendLongMessage(message, `## ${persona.emoji} **${persona.name}**\n\n${text}${footer}`);
       if (log.generation !== generation) return;
 
       log.add({
@@ -431,7 +462,7 @@ client.on('messageCreate', async (message) => {
       await message.reply(`에러 발생:
 \`\`\`
 ${error.message}
-\`\`\``);
+\`\`\`${searchRequested ? getSearchFooter() : ''}`);
     }
     return;
   }

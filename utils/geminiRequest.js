@@ -25,7 +25,9 @@ async function withRequestRetry(request, apiName) {
 }
 
 function extractReplyText(result) {
-    const text = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = result.data?.candidates?.[0]?.content?.parts
+        ?.filter((part) => !part.thought && typeof part.text === 'string')
+        .map((part) => part.text).join('');
     if (typeof text !== 'string' || !text.trim()) {
         throw new Error('응답을 받지 못했습니다.');
     }
@@ -76,10 +78,11 @@ const defaultGenerationConfig = {
  * @param {Object} generationConfig - 생성 설정 (maxOutputTokens, temperature 등)
  * @param {string} model - 사용할 Gemini 모델
  * @param {Object} [systemInstruction] - 시스템 프롬프트 ({ parts: [{ text }] })
- * @returns {Promise<string>} AI 응답 텍스트
+ * @param {{googleSearch?: boolean}} [options] - Google 검색 활성화 (검색 요청은 재시도하지 않음)
+ * @returns {Promise<string|{text: string, sources: Array<{title: string, uri: string}>}>} 일반 답변 또는 검색 결과
  */
-async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEFAULT_GEMINI_MODEL, systemInstruction) {
-    return withRequestRetry(async () => {
+async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEFAULT_GEMINI_MODEL, systemInstruction, { googleSearch = false } = {}) {
+    const request = async () => {
         try {
             // 액세스 토큰 가져오기
             const token = await getAccessToken(VERTEX_JSON.client_email, VERTEX_JSON.private_key);
@@ -93,6 +96,7 @@ async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEF
                 {
                     contents: chatHistory,
                     ...(systemInstruction ? { systemInstruction } : {}),
+                    ...(googleSearch ? { tools: [{ googleSearch: {} }] } : {}),
                     generationConfig: config,
                     safetySettings: defaultSafetySettings,
                 },
@@ -105,13 +109,26 @@ async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEF
             );
 
             // 응답 데이터 구조에 맞게 텍스트 추출
-            return extractReplyText(result);
+            const text = extractReplyText(result);
+            if (googleSearch) {
+                const metadata = result.data?.candidates?.[0]?.groundingMetadata;
+                const sources = [...new Map((metadata?.groundingChunks || [])
+                    .filter((chunk) => /^https?:\/\//i.test(chunk.web?.uri || ''))
+                    .map(({ web }) => [web.uri, { title: web.title || '', uri: web.uri }])).values()];
+                if (!sources.length) {
+                    throw new Error('Google 검색 출처가 반환되지 않았습니다. 검색 결과를 확인할 수 없습니다.');
+                }
+                return { text, sources };
+            }
+            return text;
 
         } catch (error) {
             console.error("Vertex AI 요청 중 오류 발생:", error.response ? error.response.data : error.message);
             throw new Error(`Vertex AI 요청 실패: ${error.message}`);
         }
-    }, 'Vertex AI');
+    };
+    // 검색 요청은 이미 일일 한도에서 차감됩니다. 재시도로 추가 검색이 발생하지 않게 합니다.
+    return googleSearch ? request() : withRequestRetry(request, 'Vertex AI');
 }
 
 /**
