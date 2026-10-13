@@ -56,7 +56,7 @@ function formatSearchSources(sources) {
     const title = (source.title || `출처 ${index + 1}`).replace(/[\[\]<>\r\n]/g, ' ');
     const uri = source.uri.replace(/[()<>\s]/g, (char) =>
       char === '(' ? '%28' : char === ')' ? '%29' : encodeURIComponent(char));
-    return `${index + 1}. [${title}](${uri})`;
+    return `${index + 1}. [${title}](<${uri}>)`;
   }).join('\n');
 }
 
