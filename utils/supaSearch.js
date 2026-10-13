@@ -51,15 +51,6 @@ class SearchQuota {
   }
 }
 
-function formatSearchSources(sources) {
-  return '\n\n검색 출처:\n' + sources.map((source, index) => {
-    const title = (source.title || `출처 ${index + 1}`).replace(/[\[\]<>\r\n]/g, ' ');
-    const uri = source.uri.replace(/[()<>\s]/g, (char) =>
-      char === '(' ? '%28' : char === ')' ? '%29' : encodeURIComponent(char));
-    return `${index + 1}. [${title}](<${uri}>)`;
-  }).join('\n');
-}
-
 const searchQuota = new SearchQuota(path.join(__dirname, '../data/supa-search-quota.json'));
 
-module.exports = { DAILY_SEARCH_LIMIT, SearchQuota, searchQuota, parseSearchRequest, formatSearchSources };
+module.exports = { DAILY_SEARCH_LIMIT, SearchQuota, searchQuota, parseSearchRequest };

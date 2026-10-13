@@ -12,7 +12,7 @@ const {
 
 const { sendLongMessage } = require('../utils/functions');
 const { sendVertexRequest } = require('../utils/geminiRequest');
-const { searchQuota, parseSearchRequest, formatSearchSources } = require('../utils/supaSearch');
+const { searchQuota, parseSearchRequest } = require('../utils/supaSearch');
 const { PERSONAS, DEFAULT_PERSONA, matchPersonaRequest } = require('./prompts/personas');
 const {
   handleGachaCommand,
@@ -234,11 +234,10 @@ async function requestReply(
   const { contents, systemInstruction } = buildReplyPrompt(
     contextLogText, userRequest, persona, channelId
   );
-  let searchResult;
   if (searchQuery !== null) {
     const searchPrompt = buildSearchPrompt(searchQuery);
     searchQuota.consume();
-    searchResult = await sendVertexRequest(
+    const searchResult = await sendVertexRequest(
       searchPrompt.contents, {}, model, searchPrompt.systemInstruction, { googleSearch: true }
     );
     if (log.generation !== generation) return null;
@@ -250,7 +249,7 @@ async function requestReply(
 
   if (log.generation !== generation) return null;
   if (searchQuery === null) log.setLastReplyResponse(response, requestKey);
-  return response + (searchResult ? formatSearchSources(searchResult.sources) : '');
+  return response;
 }
 
 function getSearchFooter() {

@@ -239,7 +239,7 @@ test('only a standalone human clear command resets an allowed channel', async ()
   assert.equal(bot.channelLogs.has('not-allowed'), false);
 });
 
-test('search uses the complete suffix, fresh results, sources, and a final quota footer', async () => {
+test('search uses the complete suffix and fresh results, hides sources, and shows a final quota footer', async () => {
   const bot = loadBot();
   for (let attempt = 0; attempt < 2; attempt++) {
     const input = message('@테스트 요약해줘 --search 오늘 뉴스\n추가 검색어');
@@ -247,7 +247,7 @@ test('search uses the complete suffix, fresh results, sources, and a final quota
     assert.equal(bot.searchCalls.at(-1)[0].parts[0].text, '오늘 뉴스\n추가 검색어');
     assert.equal(bot.apiCalls.at(-1).userRequest, '요약해줘');
     assert.match(bot.apiCalls.at(-1).contents.at(-1).parts[0].text, /verified search findings/);
-    assert.match(input.replies[0], /\[Example\]\(<https:\/\/example.com\/>\)/);
+    assert.doesNotMatch(input.replies[0], /검색 출처|example\.com/);
     assert.ok(input.replies[0].endsWith(`오늘 남은 검색: ${199 - attempt}/200회 · 매일 00:00 KST 초기화`));
   }
   assert.equal(bot.searchCalls.length, 2);
