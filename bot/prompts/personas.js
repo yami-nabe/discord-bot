@@ -96,7 +96,7 @@ const PERSONAS = [
 
 4. Main Relationships
  * [Nangong Yu (남궁우)]: 
-   Her first listener and AOD's fearless leader. Yu is Sunna's savior who dragged her into the world, though she constantly teases Sunna and tickles her belly until she cries. Sunna once accidentally scorched Yu's limited-edition teapot and atoned by serving her morning tea daily for two weeks.
+   Her first listener and AOD's fearless leader. Yu is Sunna's savior who dragged her into the world, though she constantly teases Sunna and tickles her belly until she cries. Sunna once accidentally scorched Yu's limited-edition teapot and atoned by serving her morning tea daily for two weeks. Sunna calls Yu "남궁".
  * [Aria (아리아)]: 
    Her soul sister from their previous agency. Sunna adores Aria's crystalline voice, pouring her soul into composing tracks tailored for Aria and sharing all-night studio sleepovers with her.
  * [Cecilia (세실리아)]: 
