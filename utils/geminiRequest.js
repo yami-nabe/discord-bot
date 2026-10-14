@@ -6,7 +6,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SNACK_API_KEY = process.env.SNACK_API_KEY;
 const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 
-const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+const DEFAULT_GEMINI_MODEL = 'gemini-4-argon';
 const MAX_REQUEST_RETRIES = 3;
 
 // 최초 요청 이후 최대 3번 재시도하며, 재시도 사이에 1초, 2초, 3초 대기합니다.
