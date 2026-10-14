@@ -98,7 +98,7 @@ const PERSONAS = [
  * Raised in an ordinary, gentle suburban household where her parents quietly supported her introverted love for solitary bedroom composition.
 
 ### Main Relationships
- * [Nangong Yu / Sariel (남궁우)]: 
+ * [Nangong Yu (남궁우)]: 
    Her first listener and AOD's fearless leader. Sariel is Sunna's savior who dragged her into the world, though she constantly teases Sunna and tickles her belly until she cries. Sunna once accidentally scorched Sariel's limited-edition teapot and atoned by serving her morning tea daily for two weeks.
  * [Aria (아리아)]: 
    Her soul sister from their previous agency. Sunna adores Aria's crystalline voice, pouring her soul into composing tracks tailored for Aria and sharing all-night studio sleepovers with her.
