@@ -37,9 +37,10 @@ function buildSummaryPrompt(logText) {
   - 미토스: Claude Mythos model (higher and stronger than opus)
   - 페이블: Claude Fable (Mythos for general users)
 - 잼: Gemini
-  - Latest model: gemini-3.1-pro-preview, gemini-3.8-flash
+  - Latest model: gemini-4-argon
   - 잼플: Gemini Flash
   - 잼프로: Gemini Pro
+  - 잼르곤: Gemini Argon
 - 챗챈: AI 채팅 채널 (아카라이브)
 - 코파: Github Copilot
 - 리스: RisuAI (AI 프론트엔드)
