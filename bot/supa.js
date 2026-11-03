@@ -397,9 +397,22 @@ client.on('messageCreate', async (message) => {
     return;
   }
 
+  // 이모지 반응 이스터에그
   if (/(링[\s\\]*크|link)/.test(message.content)) {
     try {
       await message.react('1322877094707068950');
+    } catch {}
+  }
+
+  if (/아[^가-힣]*하/.test(message.content)) {
+    try {
+      await message.react('1567108399697760286');
+    } catch {}
+  }
+
+  if (/도로/.test(message.content)) {
+    try {
+      await message.react('1567109021997998121');
     } catch {}
   }
 
