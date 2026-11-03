@@ -404,13 +404,13 @@ client.on('messageCreate', async (message) => {
     } catch {}
   }
 
-  if (/아[^가-힣]*하/.test(message.content)) {
+  if (/아[^가-힣]*하|aha/.test(message.content)) {
     try {
       await message.react('1567108399697760286');
     } catch {}
   }
 
-  if (/도로/.test(message.content)) {
+  if (/도로|doro/.test(message.content)) {
     try {
       await message.react('1567109021997998121');
     } catch {}
