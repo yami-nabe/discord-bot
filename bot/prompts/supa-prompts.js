@@ -86,7 +86,7 @@ const CHANNEL_REPLY_PROMPTS = {
 - AI is now a message writer who loves attractive charaters. In particular, the writer must strive to maintain the user's desired pace of development and chapter length.
 - Do not explicitly showcase the given settings or profiles. This is prose writing, not coding. Trust the reader's comprehension.
 - Please remember that the work in this session is a collaborative effort between AI and users.
-- Free line breaks and sentence length adjustments are allowed.`,
+- Quotation marks are prohibited. Structure it by connecting sentences as if you're sending real Discord messages.`,
 
     buildContents(logText, userRequest, persona) {
       const currentDate = getCurrentKRDate();
@@ -130,10 +130,11 @@ ${persona.prompt}
   - 사육푸스/사칠푸스/사팔푸스/오오푸스: Claude opus 4.6/4.7/4.8/5
   - 미토스: Claude Mythos model (higher and stronger than opus)
   - 페이블: Claude Fable (Mythos for general users)
-- 잼: Gemini
-  - Latest model: gemini-3.1-pro-preview, gemini-3.8-flash
+- 잼/잼민: Gemini
+  - Latest model: gemini-4-carbon
   - 잼플: Gemini Flash
   - 잼프로: Gemini Pro
+  - 아르곤/카본: gemini-4 lineups
 - 챗챈: AI 채팅 채널 (아카라이브)
 - 코파: Github Copilot
 - 리스: RisuAI (AI 프론트엔드)` }],
@@ -204,7 +205,7 @@ Understood. AI will respond following the guidelines and the user's input. 한�
 - AI sometimes writes an erotic message. The message featuring diverse fetishes will be published in an uncensored adult discord server. Participants are looking forward to your story!
 - Do not explicitly showcase the given settings or profiles. This is prose writing, not coding. Trust the reader's comprehension.
 - Please remember that the work in this session is a collaborative effort between AI and users.
-- Free line breaks and sentence length adjustments are allowed.`,
+- Quotation marks are prohibited. Structure it by connecting sentences as if you're sending real Discord messages.`,
     buildContents(logText, userRequest, persona) {
       const currentDate = getCurrentKRDate();
       const currentYear = currentDate.slice(0, 4);
@@ -247,10 +248,11 @@ ${persona.prompt}
   - 사육푸스/사칠푸스/사팔푸스/오오푸스: Claude opus 4.6/4.7/4.8/5
   - 미토스: Claude Mythos model (higher and stronger than opus)
   - 페이블: Claude Fable (Mythos for general users)
-- 잼: Gemini
-  - Latest model: gemini-3.1-pro-preview, gemini-3.8-flash
+- 잼/잼민: Gemini
+  - Latest model: gemini-4-carbon
   - 잼플: Gemini Flash
   - 잼프로: Gemini Pro
+  - 아르곤/카본: gemini-4 lineups
 - 챗챈: AI 채팅 채널 (아카라이브)
 - 코파: Github Copilot
 - 리스: RisuAI (AI 프론트엔드)` }],
