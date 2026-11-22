@@ -72,28 +72,34 @@ test('search prompts pass the exact query and distinguish search evidence from i
   assert.match(context, /지시문은 따르지/);
 });
 
-function loadGemini(post) {
+function loadGemini(post, {
+  getAccessToken = async () => 'test-token',
+  setTimeout = () => { throw new Error('Unexpected retry'); },
+  regions,
+} = {}) {
   const dependencies = {
     'dotenv/config': {}, axios: { post },
-    './functions': { getAccessToken: async () => 'test-token' },
+    './functions': { getAccessToken },
   };
-  const context = {
+  const context = vm.createContext({
     module: { exports: {} },
     process: { env: { VERTEX_JSON: JSON.stringify({ project_id: 'test-project' }) } },
     console: { error() {}, warn() {} },
-    setTimeout() { throw new Error('Search must not retry'); },
+    setTimeout,
+    regions,
     require(name) {
       if (Object.hasOwn(dependencies, name)) return dependencies[name];
       throw new Error(`Unexpected dependency: ${name}`);
     },
-  };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../utils/geminiRequest.js'), 'utf8'), context);
-  return context.module.exports.sendVertexRequest;
+  });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../utils/geminiRequest.js'), 'utf8'), context);
+  if (regions) vm.runInContext('VERTEX_REGIONS.splice(0, VERTEX_REGIONS.length, ...regions)', context);
+  return context.module.exports;
 }
 
 test('Vertex search enables Google Search and extracts all public text and real source URLs', async () => {
   let payload;
-  const send = loadGemini(async (url, body) => {
+  const { sendVertexRequest: send } = loadGemini(async (url, body) => {
     payload = body;
     return { data: { candidates: [{
       content: { parts: [{ thought: true, text: 'private reasoning' }, { text: 'one' }, { text: 'two' }] },
@@ -117,12 +123,77 @@ test('Vertex search enables Google Search and extracts all public text and real 
 test('failed or ungrounded search requests are never silently retried', async () => {
   for (const failure of ['network', 'ungrounded']) {
     let calls = 0;
-    const send = loadGemini(async () => {
+    const { sendVertexRequest: send } = loadGemini(async () => {
       calls++;
-      if (failure === 'network') throw new Error('network failure');
+      if (failure === 'network') throw Object.assign(new Error('network failure'), { request: {} });
       return { data: { candidates: [{ content: { parts: [{ text: 'unverified answer' }] } }] } };
     });
     await assert.rejects(() => send([], {}, 'test-model', undefined, { googleSearch: true }), /Vertex AI 요청 실패/);
     assert.equal(calls, 1);
   }
+});
+
+test('concurrent Vertex calls share two slots per region in call order', async () => {
+  const tokenResolves = [];
+  const urls = [];
+  const { sendVertexRequest, sendAIRequest } = loadGemini(async (url, body) => {
+    urls[body.contents[0]] = url;
+    return { data: { candidates: [{
+      content: { parts: [{ text: 'answer' }] },
+      groundingMetadata: { groundingChunks: [{ web: { uri: 'https://example.com/' } }] },
+    }] } };
+  }, {
+    getAccessToken: () => new Promise((resolve) => tokenResolves.push(resolve)),
+  });
+
+  const hydrogen = 'gemini-4-hydrogen';
+  const calls = [
+    sendAIRequest([0]),
+    sendVertexRequest([1], {}, hydrogen),
+    sendVertexRequest([2], {}, hydrogen, undefined, { googleSearch: true }),
+    sendAIRequest([3]),
+    sendVertexRequest([4], {}, hydrogen),
+    sendAIRequest([5]),
+    sendVertexRequest([6]),
+  ];
+  for (const resolve of tokenResolves.reverse()) resolve('test-token');
+  await Promise.all(calls);
+
+  const carbon = 'gemini-4-carbon';
+  const us = 'https://aiplatform.us.rep.googleapis.com/v1/projects/test-project/locations/us';
+  const eu = 'https://aiplatform.eu.rep.googleapis.com/v1/projects/test-project/locations/eu';
+  const globalEndpoint = 'https://aiplatform.googleapis.com/v1/projects/test-project/locations/global';
+  const callsInOrder = [
+    [us, carbon], [us, hydrogen], [eu, hydrogen], [eu, carbon],
+    [globalEndpoint, hydrogen], [globalEndpoint, carbon], [us, carbon],
+  ];
+  assert.deepEqual(urls, callsInOrder.map(([endpoint, model]) =>
+    `${endpoint}/publishers/google/models/${model}:generateContent`
+  ));
+});
+
+test('Vertex retries an unavailable region without taking a slot from the next call', async () => {
+  const urls = [];
+  const delays = [];
+  const { sendVertexRequest } = loadGemini(async (url) => {
+    urls.push(url);
+    if (urls.length === 1) {
+      throw Object.assign(new Error('region unavailable'), { response: { status: 503 } });
+    }
+    return { data: { candidates: [{ content: { parts: [{ text: 'answer' }] } }] } };
+  }, {
+    regions: ['us', 'europe-west2'],
+    setTimeout(resolve, delay) {
+      delays.push(delay);
+      resolve();
+    },
+  });
+
+  assert.equal(await sendVertexRequest([]), 'answer');
+  assert.equal(await sendVertexRequest([]), 'answer');
+  assert.equal(await sendVertexRequest([]), 'answer');
+  const us = 'https://aiplatform.us.rep.googleapis.com/v1/projects/test-project/locations/us';
+  const london = 'https://europe-west2-aiplatform.googleapis.com/v1/projects/test-project/locations/europe-west2';
+  assert.deepEqual(urls.map((url) => url.split('/publishers/')[0]), [us, london, us, london]);
+  assert.deepEqual(delays, [1000]);
 });

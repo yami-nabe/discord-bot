@@ -9,6 +9,16 @@ const VERTEX_JSON = JSON.parse(process.env.VERTEX_JSON);
 const DEFAULT_GEMINI_MODEL = 'gemini-4-carbon';
 const MAX_REQUEST_RETRIES = 3;
 
+// 사용할 모델이 지원하는 리전 ID를 요청 순서대로 직접 추가하거나 수정하세요.
+// Carbon과 Hydrogen은 us, eu 멀티리전과 global 엔드포인트를 지원합니다.
+const VERTEX_REGIONS = [
+    'us',
+    'eu',
+    'global',
+];
+const REQUESTS_PER_VERTEX_REGION = 2;
+let nextVertexRequestSlot = 0;
+
 // 최초 요청 이후 최대 3번 재시도하며, 재시도 사이에 1초, 2초, 3초 대기합니다.
 async function withRequestRetry(request, apiName) {
     for (let retryCount = 0; retryCount <= MAX_REQUEST_RETRIES; retryCount++) {
@@ -82,7 +92,25 @@ const defaultGenerationConfig = {
  * @returns {Promise<string|{text: string, sources: Array<{title: string, uri: string}>}>} 일반 답변 또는 검색 결과
  */
 async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEFAULT_GEMINI_MODEL, systemInstruction, { googleSearch = false } = {}) {
+    if (!VERTEX_REGIONS.length) {
+        throw new Error('VERTEX_REGIONS에 Vertex AI 리전을 하나 이상 지정해주세요.');
+    }
+
+    // 토큰을 기다리기 전에 최초 시도 리전을 배정해 동시 호출의 순서를 유지합니다.
+    let regionIndex = Math.floor(nextVertexRequestSlot / REQUESTS_PER_VERTEX_REGION);
+    nextVertexRequestSlot = (nextVertexRequestSlot + 1) % (VERTEX_REGIONS.length * REQUESTS_PER_VERTEX_REGION);
+
     const request = async () => {
+        const region = VERTEX_REGIONS[regionIndex];
+        let hostname;
+        if (region === 'global') {
+            hostname = 'aiplatform.googleapis.com';
+        } else if (region === 'us' || region === 'eu') {
+            hostname = `aiplatform.${region}.rep.googleapis.com`;
+        } else {
+            hostname = `${region}-aiplatform.googleapis.com`;
+        }
+
         try {
             // 액세스 토큰 가져오기
             const token = await getAccessToken(VERTEX_JSON.client_email, VERTEX_JSON.private_key);
@@ -92,7 +120,7 @@ async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEF
 
             // Vertex AI에 POST 리퀘스트 보내기
             const result = await axios.post(
-                `https://aiplatform.googleapis.com/v1/projects/${VERTEX_JSON.project_id}/locations/global/publishers/google/models/${model}:generateContent`,
+                `https://${hostname}/v1/projects/${VERTEX_JSON.project_id}/locations/${region}/publishers/google/models/${model}:generateContent`,
                 {
                     contents: chatHistory,
                     ...(systemInstruction ? { systemInstruction } : {}),
@@ -123,7 +151,13 @@ async function sendVertexRequest(chatHistory, generationConfig = {}, model = DEF
             return text;
 
         } catch (error) {
-            console.error("Vertex AI 요청 중 오류 발생:", error.response ? error.response.data : error.message);
+            console.error(`Vertex AI ${region} 요청 중 오류 발생:`, error.response ? error.response.data : error.message);
+
+            // 리전 장애로 재시도할 때는 해당 호출의 리전만 바꿉니다.
+            const status = error.response?.status;
+            if (!googleSearch && (status === 429 || status >= 500 || (!error.response && error.request))) {
+                regionIndex = (regionIndex + 1) % VERTEX_REGIONS.length;
+            }
             throw new Error(`Vertex AI 요청 실패: ${error.message}`);
         }
     };
