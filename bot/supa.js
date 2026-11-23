@@ -1,6 +1,6 @@
 require('dotenv/config');
 
-const DEFAULT_GEMINI_MODEL = 'gemini-4-hydrogen';
+const DEFAULT_GEMINI_MODEL = 'gemini-4-neon';
 
 const {
   Client,
